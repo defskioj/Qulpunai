@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="ru" x-data="catalogApp()" x-init="init()">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Qulpynai — Каталог десертов</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Cormorant+Garamond:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cream:   '#FFFBF0',
+            blush:   '#FCE4EC',
+            petal:   '#F8BBD0',
+            rose:    '#E91E8C',
+            berry:   '#AD1457',
+            dusty:   '#C2185B',
+            espresso:'#2C1810',
+            mocha:   '#5D4037',
+            latte:   '#8D6E63',
+            foam:    '#EFEBE9',
+            powder:  '#FCF0F5',
+          },
+          fontFamily: {
+            display: ['"Playfair Display"', 'serif'],
+            serif2:  ['"Cormorant Garamond"', 'serif'],
+            body:    ['"Inter"', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    :root {
+      --cream:   #FFFBF0;
+      --blush:   #FCE4EC;
+      --petal:   #F8BBD0;
+      --berry:   #AD1457;
+      --espresso:#2C1810;
+      --mocha:   #5D4037;
+      --latte:   #8D6E63;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--cream);
+      color: var(--espresso);
+      overflow-x: hidden;
+    }
+
+    /* ── Grain ── */
+    body::after {
+      content: '';
+      position: fixed; inset: 0; z-index: 9999;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      opacity: 0.4;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--cream); }
+    ::-webkit-scrollbar-thumb { background: var(--petal); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--berry); }
+
+    /* ── Nav ── */
+    .nav-glass {
+      background: rgba(255,251,240,0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(248,187,208,0.35);
+    }
+
+    /* ── Search ── */
+    .search-input:focus { outline: none; }
+    .search-wrap:focus-within .search-border { opacity: 1; transform: scaleX(1); }
+    .search-border {
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      opacity: 0;
+    }
+
+    /* ── Cart badge pulse ── */
+    @keyframes badgePop {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.4); }
+      100% { transform: scale(1); }
+    }
+    .badge-pop { animation: badgePop 0.35s ease; }
+
+    /* ── Filter pill ── */
+    .filter-pill {
+      transition: all 0.25s cubic-bezier(.22,1,.36,1);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .filter-pill::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, #AD1457, #E91E8C);
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      border-radius: inherit;
+    }
+    .filter-pill.active::before,
+    .filter-pill:hover::before { opacity: 1; }
+    .filter-pill span { position: relative; z-index: 1; }
+    .filter-pill.active span { color: #fff; }
+    .filter-pill:hover span { color: #fff; }
+
+    /* ── Product card ── */
+    .product-card {
+      transition: transform 0.35s cubic-bezier(.22,1,.36,1), box-shadow 0.35s ease;
+      cursor: pointer;
+    }
+    .product-card:hover {
+      transform: translateY(-6px) scale(1.015);
+      box-shadow: 0 20px 50px -10px rgba(173,20,87,0.18), 0 8px 20px -5px rgba(44,24,16,0.1);
+    }
+    .card-img-wrap { overflow: hidden; }
+    .card-img-wrap img {
+      transition: transform 0.6s cubic-bezier(.22,1,.36,1);
+    }
+    .product-card:hover .card-img-wrap img { transform: scale(1.08); }
+
+    /* ── Btn ── */
+    .btn-berry {
+      background: linear-gradient(135deg, #AD1457, #E91E8C);
+      color: #fff;
+      transition: all 0.3s ease;
+    }
+    .btn-berry:hover {
+      background: linear-gradient(135deg, #8B1040, #C2185B);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(173,20,87,0.35);
+    }
+    .btn-outline-berry {
+      border: 1.5px solid #AD1457;
+      color: #AD1457;
+      transition: all 0.3s ease;
+    }
+    .btn-outline-berry:hover {
+      background: #AD1457; color: #fff;
+      transform: translateY(-1px);
+    }
+
+    /* ── Badge popular ── */
+    .badge-popular {
+      background: linear-gradient(135deg, #AD1457, #E91E8C);
+      color: #fff;
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+    }
+    .badge-new {
+      background: linear-gradient(135deg, #2E7D32, #66BB6A);
+      color: #fff;
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+    }
+    .badge-seasonal {
+      background: linear-gradient(135deg, #E65100, #FF9800);
+      color: #fff;
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+    }
+
+    /* ── Fade in stagger ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.65s ease both; }
+    .stagger-1 { animation-delay: 0.05s; }
+    .stagger-2 { animation-delay: 0.12s; }
+    .stagger-3 { animation-delay: 0.19s; }
+    .stagger-4 { animation-delay: 0.26s; }
+
+    /* ── Modal ── */
+    .modal-enter { animation: modalIn 0.35s cubic-bezier(.22,1,.36,1) both; }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.94) translateY(12px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .modal-overlay-enter { animation: overlayIn 0.25s ease both; }
+    @keyframes overlayIn {
+      from { opacity: 0; } to { opacity: 1; }
+    }
+
+    /* ── Size selector ── */
+    .size-opt { transition: all 0.2s ease; cursor: pointer; }
+    .size-opt.selected {
+      border-color: #AD1457;
+      background: #FCE4EC;
+      color: #AD1457;
+    }
+    .size-opt:hover { border-color: #AD1457; }
+
+    /* ── Qty input ── */
+    .qty-btn { transition: all 0.2s ease; }
+    .qty-btn:hover { background: #FCE4EC; color: #AD1457; }
+
+    /* ── Progress bar (КБЖУ) ── */
+    .progress-fill {
+      height: 100%;
+      border-radius: 9999px;
+      transition: width 0.8s cubic-bezier(.22,1,.36,1);
+    }
+
+    /* ── Cart drawer ── */
+    .cart-drawer {
+      transition: transform 0.4s cubic-bezier(.22,1,.36,1);
+    }
+    .cart-drawer.open { transform: translateX(0); }
+    .cart-drawer.closed { transform: translateX(100%); }
+
+    /* ── Sort select ── */
+    select { appearance: none; -webkit-appearance: none; cursor: pointer; }
+
+    /* ── Hero banner ── */
+    .hero-banner {
+      background: linear-gradient(135deg, #FCE4EC 0%, #FFFBF0 50%, #FCF0F5 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-banner::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 80% 50%, rgba(248,187,208,0.5) 0%, transparent 70%);
+    }
+    .hero-banner::after {
+      content: '';
+      position: absolute; bottom: -1px; left: 0; right: 0;
+      height: 60px;
+      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 1440 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,30 C240,60 480,0 720,30 C960,60 1200,0 1440,30 L1440,60 L0,60 Z' fill='%23FFFBF0'/%3E%3C/svg%3E") no-repeat bottom/cover;
+    }
+
+    /* ── Empty state ── */
+    .empty-state { animation: fadeUp 0.5s ease both; }
+
+    [x-cloak] { display: none !important; }
+
+    /* ── Responsive util ── */
+    @media (max-width: 640px) {
+      .product-card:hover { transform: none; box-shadow: 0 4px 16px rgba(173,20,87,0.1); }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ═══════════════════════════════════
+     STICKY NAVIGATION
+═══════════════════════════════════ -->
+<header class="nav-glass sticky top-0 z-50 w-full">
+  <div class="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center gap-4">
+
+    <!-- Logo -->
+    <a href="/" class="flex items-center gap-2.5 shrink-0 group">
+      <div class="w-9 h-9 rounded-full flex items-center justify-center shadow-sm"
+           style="background: linear-gradient(135deg, #5BBFBF, #4AADAD)">
+        <span class="text-base leading-none">🍓</span>
+      </div>
+      <div class="hidden sm:block">
+        <p class="font-display font-semibold text-espresso text-base leading-none tracking-wide">Qulpynai</p>
+        <p class="font-body text-latte text-[10px] tracking-[0.15em] uppercase leading-none mt-0.5">Кондитерская</p>
+      </div>
+    </a>
+
+    <!-- Search -->
+    <div class="search-wrap flex-1 max-w-md mx-auto relative">
+      <div class="relative flex items-center bg-foam rounded-xl px-3 py-2 gap-2">
+        <i data-lucide="search" class="w-4 h-4 text-latte shrink-0"></i>
+        <input
+          type="text"
+          x-model="searchQuery"
+          placeholder="Найти десерт..."
+          class="search-input flex-1 bg-transparent font-body text-sm text-espresso placeholder-latte/60 min-w-0"/>
+        <button x-show="searchQuery" @click="searchQuery=''" class="text-latte hover:text-berry transition-colors">
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+      <div class="search-border absolute bottom-0 left-3 right-3 h-0.5 rounded-full" style="background: linear-gradient(90deg, #AD1457, #E91E8C)"></div>
+    </div>
+
+    <!-- Right actions -->
+    <div class="flex items-center gap-2 shrink-0">
+      <!-- Wishlist -->
+      <button class="relative w-9 h-9 rounded-xl hover:bg-blush flex items-center justify-center transition-colors text-latte hover:text-berry">
+        <i data-lucide="heart" class="w-4.5 h-4.5" style="width:18px;height:18px"></i>
+      </button>
+
+      <!-- Cart -->
+      <button @click="cartOpen = !cartOpen"
+              class="relative w-9 h-9 rounded-xl hover:bg-blush flex items-center justify-center transition-colors text-latte hover:text-berry">
+        <i data-lucide="shopping-bag" style="width:18px;height:18px"></i>
+        <span x-show="cartCount > 0" x-cloak
+              :class="{ 'badge-pop': cartAnimated }"
+              class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full badge-popular text-[10px] font-bold flex items-center justify-center px-1"
+              x-text="cartCount"></span>
+      </button>
+
+      <!-- Mobile filter toggle -->
+      <button @click="filterOpen = !filterOpen"
+              class="md:hidden w-9 h-9 rounded-xl hover:bg-blush flex items-center justify-center transition-colors text-latte hover:text-berry">
+        <i data-lucide="sliders-horizontal" style="width:18px;height:18px"></i>
+      </button>
+    </div>
+  </div>
+</header>
+
+
+<!-- ═══════════════════════════════════
+     HERO BANNER
+═══════════════════════════════════ -->
+<section class="hero-banner px-4 md:px-8 pt-12 pb-20 relative">
+  <div class="max-w-7xl mx-auto relative z-10">
+    <div class="max-w-2xl">
+      <p class="fade-up font-body text-xs tracking-[0.25em] uppercase text-berry/70 font-medium mb-4">
+        Алматы · Авторские десерты
+      </p>
+      <h1 class="fade-up stagger-1 font-display text-5xl md:text-6xl lg:text-7xl font-bold text-espresso leading-[1.06] mb-5">
+        Наше<br/><em class="not-italic italic text-berry">Меню</em>
+      </h1>
+      <p class="fade-up stagger-2 font-body text-latte text-base md:text-lg leading-relaxed max-w-lg mb-7">
+        Только натуральные ингредиенты, рецепты с душой и свежая выпечка каждый день. Более 500 позиций в нашем каталоге.
+      </p>
+      <!-- Quick stats -->
+      <div class="fade-up stagger-3 flex flex-wrap gap-6">
+        <div class="flex items-center gap-2 text-sm">
+          <div class="w-8 h-8 rounded-lg bg-white/80 flex items-center justify-center shadow-sm">
+            <span class="text-base">🎂</span>
+          </div>
+          <div>
+            <p class="font-body font-semibold text-espresso text-xs leading-none">120+ тортов</p>
+            <p class="font-body text-latte text-[11px] mt-0.5">в ассортименте</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 text-sm">
+          <div class="w-8 h-8 rounded-lg bg-white/80 flex items-center justify-center shadow-sm">
+            <span class="text-base">🥐</span>
+          </div>
+          <div>
+            <p class="font-body font-semibold text-espresso text-xs leading-none">Ежедневная</p>
+            <p class="font-body text-latte text-[11px] mt-0.5">свежая выпечка</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 text-sm">
+          <div class="w-8 h-8 rounded-lg bg-white/80 flex items-center justify-center shadow-sm">
+            <span class="text-base">🚀</span>
+          </div>
+          <div>
+            <p class="font-body font-semibold text-espresso text-xs leading-none">Доставка</p>
+            <p class="font-body text-latte text-[11px] mt-0.5">за 2–3 часа</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Decorative circles -->
+    <div class="absolute right-0 top-0 w-72 h-72 rounded-full pointer-events-none hidden lg:block"
+         style="background: radial-gradient(circle, rgba(248,187,208,0.4) 0%, transparent 70%); transform: translate(20%, -30%)"></div>
+    <div class="absolute right-20 bottom-10 w-40 h-40 rounded-full pointer-events-none hidden lg:block"
+         style="background: radial-gradient(circle, rgba(173,20,87,0.08) 0%, transparent 70%)"></div>
+
+    <!-- Floating emojis -->
+    <div class="absolute right-8 top-8 text-4xl opacity-50 hidden md:block pointer-events-none select-none"
+         style="animation: float 6s ease-in-out infinite; transform: rotate(15deg)">🍰</div>
+    <div class="absolute right-32 top-16 text-2xl opacity-30 hidden lg:block pointer-events-none select-none"
+         style="animation: float 5s ease-in-out infinite 1s; transform: rotate(-10deg)">✨</div>
+    <div class="absolute right-16 top-28 text-3xl opacity-40 hidden lg:block pointer-events-none select-none"
+         style="animation: float 7s ease-in-out infinite 2s">🍓</div>
+  </div>
+</section>
+
+<style>
+  @keyframes float {
+    0%,100% { transform: translateY(0) rotate(15deg); }
+    50%      { transform: translateY(-14px) rotate(15deg); }
+  }
+</style>
+
+
+<!-- ═══════════════════════════════════
+     MAIN CONTENT
+═══════════════════════════════════ -->
+<main class="max-w-7xl mx-auto px-4 md:px-8 pb-20">
+
+  <!-- ── Filter Bar ── -->
+  <div class="mb-8">
+
+    <!-- Mobile filter panel -->
+    <div x-show="filterOpen" x-cloak
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 -translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         class="md:hidden mb-4 bg-white rounded-2xl shadow-lg p-5 border border-petal/30">
+      <p class="font-body text-xs uppercase tracking-widest text-latte font-medium mb-3">Категории</p>
+      <div class="flex flex-wrap gap-2">
+        <template x-for="cat in categories" :key="cat.id">
+          <button
+            @click="activeCategory = cat.id; filterOpen = false"
+            :class="activeCategory === cat.id ? 'active' : ''"
+            class="filter-pill rounded-full px-4 py-1.5 border border-petal/50 bg-foam text-xs font-body font-medium text-mocha">
+            <span x-text="cat.label"></span>
+          </button>
+        </template>
+      </div>
+    </div>
+
+    <!-- Desktop filter bar -->
+    <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+
+      <!-- Category pills -->
+      <div class="hidden md:flex flex-wrap gap-2">
+        <template x-for="cat in categories" :key="cat.id">
+          <button
+            @click="activeCategory = cat.id"
+            :class="activeCategory === cat.id ? 'active' : ''"
+            class="filter-pill rounded-full px-5 py-2 border border-petal/50 bg-white text-sm font-body font-medium text-mocha shadow-sm">
+            <span x-text="cat.label"></span>
+          </button>
+        </template>
+      </div>
+
+      <!-- Right controls -->
+      <div class="flex items-center gap-3 w-full md:w-auto">
+        <!-- Results count -->
+        <p class="font-body text-xs text-latte mr-auto md:mr-0">
+          <span class="font-semibold text-espresso" x-text="filteredProducts.length"></span> позиций
+        </p>
+
+        <!-- Sort -->
+        <div class="relative">
+          <select x-model="sortBy"
+                  class="font-body text-xs text-mocha bg-white border border-petal/50 rounded-xl pl-3 pr-8 py-2 shadow-sm focus:outline-none focus:border-berry appearance-none">
+            <option value="default">По умолчанию</option>
+            <option value="price_asc">Дешевле</option>
+            <option value="price_desc">Дороже</option>
+            <option value="popular">Популярные</option>
+            <option value="new">Новинки</option>
+          </select>
+          <div class="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-latte">
+            <i data-lucide="chevron-down" style="width:12px;height:12px"></i>
+          </div>
+        </div>
+
+        <!-- Grid toggle -->
+        <div class="flex bg-white border border-petal/50 rounded-xl overflow-hidden shadow-sm">
+          <button @click="gridCols = 4"
+                  :class="gridCols === 4 ? 'bg-blush text-berry' : 'text-latte'"
+                  class="px-2.5 py-2 transition-colors">
+            <i data-lucide="layout-grid" style="width:14px;height:14px"></i>
+          </button>
+          <button @click="gridCols = 2"
+                  :class="gridCols === 2 ? 'bg-blush text-berry' : 'text-latte'"
+                  class="px-2.5 py-2 transition-colors border-l border-petal/50">
+            <i data-lucide="layout-list" style="width:14px;height:14px"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Product Grid ── -->
+  <div x-show="filteredProducts.length > 0">
+    <div :class="gridCols === 4
+        ? 'grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5'
+        : 'grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5'">
+
+      <template x-for="(p, index) in filteredProducts" :key="p.id">
+        <article
+          @click="openModal(p)"
+          class="product-card bg-white rounded-2xl md:rounded-3xl overflow-hidden shadow-sm border border-petal/20 flex flex-col"
+          :class="`fade-up stagger-${(index % 4) + 1}`">
+
+          <!-- Image -->
+          <div class="card-img-wrap relative">
+            <div class="relative overflow-hidden"
+                 :class="gridCols === 4 ? 'h-44 md:h-52' : 'h-56'">
+              <img :src="p.image" :alt="p.name"
+                   class="w-full h-full object-cover"
+                   loading="lazy"
+                   onerror="this.src='https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?auto=format&fit=crop&w=400&q=60'"/>
+              <!-- Gradient overlay -->
+              <div class="absolute inset-0 bg-gradient-to-t from-espresso/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            </div>
+            <!-- Badge -->
+            <div x-show="p.badge" class="absolute top-3 left-3">
+              <span :class="p.badgeType === 'popular' ? 'badge-popular' : p.badgeType === 'new' ? 'badge-new' : 'badge-seasonal'"
+                    class="rounded-full px-2.5 py-1 font-body font-semibold uppercase"
+                    x-text="p.badge"></span>
+            </div>
+            <!-- Quick add -->
+            <button
+              @click.stop="addToCart(p)"
+              class="absolute bottom-3 right-3 w-8 h-8 rounded-full btn-berry flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+              style="opacity: 1;">
+              <i data-lucide="plus" style="width:14px;height:14px; color:#fff"></i>
+            </button>
+          </div>
+
+          <!-- Content -->
+          <div class="p-4 flex flex-col flex-1">
+            <!-- Category tag -->
+            <p class="font-body text-[10px] uppercase tracking-widest text-berry/60 font-medium mb-1.5" x-text="p.catLabel"></p>
+
+            <!-- Name -->
+            <h3 class="font-display font-semibold text-espresso leading-snug mb-1"
+                :class="gridCols === 4 ? 'text-base' : 'text-lg'"
+                x-text="p.name"></h3>
+
+            <!-- Weight -->
+            <p class="font-body text-xs text-latte mb-3 flex-1" x-text="p.weight"></p>
+
+            <!-- Price + CTA -->
+            <div class="flex items-center justify-between mt-auto pt-3 border-t border-petal/20">
+              <div>
+                <p class="font-display font-bold text-espresso"
+                   :class="gridCols === 4 ? 'text-base' : 'text-lg'"
+                   x-text="p.price + ' ₸'"></p>
+                <p x-show="p.oldPrice" class="font-body text-xs text-latte line-through leading-none" x-text="p.oldPrice + ' ₸'"></p>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button @click.stop="openModal(p)"
+                        class="btn-outline-berry rounded-xl px-3 py-1.5 text-xs font-body font-medium">
+                  Детали
+                </button>
+                <button @click.stop="addToCart(p)"
+                        class="btn-berry rounded-xl px-3 py-1.5 text-xs font-body font-medium flex items-center gap-1">
+                  <i data-lucide="plus" style="width:11px;height:11px"></i>
+                  Добавить
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+      </template>
+    </div>
+  </div>
+
+  <!-- ── Empty state ── -->
+  <div x-show="filteredProducts.length === 0" x-cloak class="empty-state text-center py-24">
+    <div class="text-6xl mb-4">🔍</div>
+    <h3 class="font-display text-2xl font-bold text-espresso mb-2">Ничего не найдено</h3>
+    <p class="font-body text-latte mb-6">Попробуйте изменить запрос или выбрать другую категорию</p>
+    <button @click="searchQuery=''; activeCategory='all'"
+            class="btn-berry rounded-full px-6 py-3 font-body font-medium text-sm">
+      Сбросить фильтры
+    </button>
+  </div>
+
+</main>
+
+
+<!-- ═══════════════════════════════════
+     PRODUCT MODAL
+═══════════════════════════════════ -->
+<div x-show="modalProduct !== null" x-cloak
+     @keydown.escape.window="closeModal()"
+     class="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4">
+
+  <!-- Backdrop -->
+  <div class="modal-overlay-enter absolute inset-0 bg-espresso/50 backdrop-blur-sm"
+       @click="closeModal()"></div>
+
+  <!-- Modal panel -->
+  <div class="modal-enter relative bg-cream w-full md:max-w-2xl md:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
+       x-show="modalProduct !== null">
+
+    <!-- Close -->
+    <button @click="closeModal()"
+            class="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-white/80 backdrop-blur flex items-center justify-center text-latte hover:text-berry hover:bg-blush transition-colors shadow">
+      <i data-lucide="x" style="width:16px;height:16px"></i>
+    </button>
+
+    <div class="overflow-y-auto flex-1">
+      <!-- Hero image -->
+      <div class="relative h-56 md:h-72 shrink-0">
+        <img :src="modalProduct?.image" :alt="modalProduct?.name"
+             class="w-full h-full object-cover"
+             onerror="this.src='https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?auto=format&fit=crop&w=800&q=70'"/>
+        <div class="absolute inset-0 bg-gradient-to-t from-espresso/40 to-transparent"></div>
+        <div class="absolute bottom-4 left-5">
+          <p class="font-body text-[10px] uppercase tracking-widest text-petal font-medium mb-1"
+             x-text="modalProduct?.catLabel"></p>
+          <h2 class="font-display text-3xl font-bold text-white" x-text="modalProduct?.name"></h2>
+        </div>
+      </div>
+
+      <div class="p-5 md:p-7">
+        <div class="grid md:grid-cols-2 gap-6">
+
+          <!-- Left col -->
+          <div>
+            <!-- Description -->
+            <p class="font-body text-sm text-mocha leading-relaxed mb-5"
+               x-text="modalProduct?.description"></p>
+
+            <!-- Ingredients -->
+            <div class="mb-5">
+              <h4 class="font-body text-xs uppercase tracking-widest text-latte font-semibold mb-2">Состав</h4>
+              <p class="font-body text-xs text-mocha/80 leading-relaxed" x-text="modalProduct?.ingredients"></p>
+            </div>
+
+            <!-- Size selector -->
+            <div class="mb-5" x-show="modalProduct?.sizes?.length > 0">
+              <h4 class="font-body text-xs uppercase tracking-widest text-latte font-semibold mb-3">Размер / Вес</h4>
+              <div class="flex flex-wrap gap-2">
+                <template x-for="sz in (modalProduct?.sizes || [])" :key="sz.label">
+                  <button
+                    @click="selectedSize = sz"
+                    :class="selectedSize?.label === sz.label ? 'selected' : ''"
+                    class="size-opt border border-petal/60 rounded-xl px-4 py-2 text-sm font-body bg-white text-mocha">
+                    <span class="font-medium" x-text="sz.label"></span>
+                    <span class="block text-xs text-latte" x-text="sz.price + ' ₸'"></span>
+                  </button>
+                </template>
+              </div>
+            </div>
+
+            <!-- Quantity -->
+            <div class="mb-5">
+              <h4 class="font-body text-xs uppercase tracking-widest text-latte font-semibold mb-3">Количество</h4>
+              <div class="flex items-center gap-0">
+                <button @click="qty = Math.max(1, qty - 1)"
+                        class="qty-btn w-9 h-9 rounded-l-xl border border-petal/60 bg-white flex items-center justify-center text-mocha font-body font-medium">
+                  <i data-lucide="minus" style="width:14px;height:14px"></i>
+                </button>
+                <div class="w-12 h-9 border-y border-petal/60 bg-white flex items-center justify-center font-body font-semibold text-espresso text-sm"
+                     x-text="qty"></div>
+                <button @click="qty++"
+                        class="qty-btn w-9 h-9 rounded-r-xl border border-petal/60 bg-white flex items-center justify-center text-mocha font-body font-medium">
+                  <i data-lucide="plus" style="width:14px;height:14px"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right col: КБЖУ -->
+          <div>
+            <div class="bg-white rounded-2xl p-5 border border-petal/30 mb-5">
+              <h4 class="font-body text-xs uppercase tracking-widest text-latte font-semibold mb-4">КБЖУ на 100 г</h4>
+              <div class="space-y-3">
+                <template x-for="n in (modalProduct?.nutrition || [])" :key="n.label">
+                  <div>
+                    <div class="flex justify-between mb-1">
+                      <span class="font-body text-xs text-mocha" x-text="n.label"></span>
+                      <span class="font-body text-xs font-semibold text-espresso" x-text="n.value"></span>
+                    </div>
+                    <div class="h-1.5 bg-foam rounded-full overflow-hidden">
+                      <div class="progress-fill rounded-full" :style="`width: ${n.pct}%; background: ${n.color}`"></div>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- Allergens -->
+            <div class="bg-amber-50 rounded-2xl p-4 border border-amber-100">
+              <div class="flex items-start gap-2">
+                <i data-lucide="alert-circle" class="text-amber-500 shrink-0 mt-0.5" style="width:15px;height:15px"></i>
+                <div>
+                  <p class="font-body text-xs font-semibold text-amber-800 mb-0.5">Аллергены</p>
+                  <p class="font-body text-xs text-amber-700" x-text="modalProduct?.allergens"></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer actions -->
+    <div class="px-5 md:px-7 py-4 bg-white border-t border-petal/30 flex items-center justify-between gap-4 shrink-0">
+      <div>
+        <p class="font-body text-xs text-latte">Итого</p>
+        <p class="font-display font-bold text-espresso text-xl"
+           x-text="((selectedSize?.price || modalProduct?.price || 0) * qty).toLocaleString('ru') + ' ₸'"></p>
+      </div>
+      <button @click="addToCartFromModal()"
+              class="btn-berry rounded-2xl px-6 py-3 font-body font-semibold text-sm flex items-center gap-2 shadow-lg flex-1 justify-center">
+        <i data-lucide="shopping-bag" style="width:16px;height:16px"></i>
+        Добавить в корзину
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════
+     CART DRAWER
+═══════════════════════════════════ -->
+<div x-show="cartOpen" x-cloak class="fixed inset-0 z-[90]">
+  <div class="absolute inset-0 bg-espresso/40 backdrop-blur-sm" @click="cartOpen = false"></div>
+  <div :class="cartOpen ? 'open' : 'closed'"
+       class="cart-drawer absolute right-0 top-0 bottom-0 w-full max-w-sm bg-cream shadow-2xl flex flex-col">
+
+    <!-- Header -->
+    <div class="px-6 py-5 border-b border-petal/30 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <i data-lucide="shopping-bag" class="text-berry" style="width:20px;height:20px"></i>
+        <h3 class="font-display font-semibold text-espresso text-lg">Корзина</h3>
+        <span x-show="cartCount > 0" class="badge-popular rounded-full w-5 h-5 flex items-center justify-center text-[10px]" x-text="cartCount"></span>
+      </div>
+      <button @click="cartOpen = false" class="text-latte hover:text-berry transition-colors">
+        <i data-lucide="x" style="width:18px;height:18px"></i>
+      </button>
+    </div>
+
+    <!-- Items -->
+    <div class="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+      <template x-if="cart.length === 0">
+        <div class="text-center py-16">
+          <div class="text-5xl mb-3 opacity-50">🛍️</div>
+          <p class="font-body text-latte text-sm">Корзина пустая</p>
+          <button @click="cartOpen = false" class="mt-4 btn-berry rounded-full px-5 py-2 text-xs font-body font-medium">
+            Выбрать десерт
+          </button>
+        </div>
+      </template>
+      <template x-for="(item, i) in cart" :key="i">
+        <div class="flex gap-3 bg-white rounded-2xl p-3 border border-petal/20 shadow-sm">
+          <img :src="item.image" :alt="item.name" class="w-14 h-14 rounded-xl object-cover shrink-0"/>
+          <div class="flex-1 min-w-0">
+            <p class="font-body font-semibold text-espresso text-sm truncate" x-text="item.name"></p>
+            <p class="font-body text-xs text-latte" x-text="item.size || item.weight"></p>
+            <div class="flex items-center justify-between mt-1.5">
+              <p class="font-display font-bold text-berry text-sm" x-text="(item.price * item.qty).toLocaleString('ru') + ' ₸'"></p>
+              <div class="flex items-center gap-1">
+                <button @click="changeQty(i, -1)" class="w-5 h-5 rounded-full bg-foam flex items-center justify-center text-mocha hover:bg-blush hover:text-berry transition-colors">
+                  <i data-lucide="minus" style="width:10px;height:10px"></i>
+                </button>
+                <span class="font-body text-xs font-semibold w-4 text-center" x-text="item.qty"></span>
+                <button @click="changeQty(i, 1)" class="w-5 h-5 rounded-full bg-foam flex items-center justify-center text-mocha hover:bg-blush hover:text-berry transition-colors">
+                  <i data-lucide="plus" style="width:10px;height:10px"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- Footer -->
+    <div x-show="cart.length > 0" class="px-6 py-5 border-t border-petal/30 bg-white">
+      <div class="flex justify-between mb-4">
+        <p class="font-body text-sm text-latte">Итого</p>
+        <p class="font-display font-bold text-espresso text-xl" x-text="cartTotal.toLocaleString('ru') + ' ₸'"></p>
+      </div>
+      <button class="btn-berry w-full rounded-2xl py-3.5 font-body font-semibold text-sm flex items-center justify-center gap-2 shadow-lg mb-2">
+        <i data-lucide="credit-card" style="width:16px;height:16px"></i>
+        Оформить заказ
+      </button>
+      <a href="https://wa.me/77272000000" target="_blank"
+         class="w-full rounded-2xl py-3 font-body font-medium text-sm flex items-center justify-center gap-2 text-berry hover:bg-blush transition-colors border border-petal/50">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+        Заказать в WhatsApp
+      </a>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════
+     FOOTER
+═══════════════════════════════════ -->
+<footer style="background: #2C1810;" class="text-white/80 pt-16 pb-8 px-4 md:px-8">
+  <div class="max-w-7xl mx-auto">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-10 pb-12 border-b border-white/10">
+
+      <!-- Brand -->
+      <div class="md:col-span-3">
+        <div class="flex items-center gap-2.5 mb-4">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background: linear-gradient(135deg, #5BBFBF, #4AADAD)">
+            <span class="text-lg">🍓</span>
+          </div>
+          <div>
+            <p class="font-display font-semibold text-white text-xl tracking-wide">Qulpynai</p>
+            <p class="font-body text-white/40 text-[10px] tracking-[0.15em] uppercase">Кондитерская сеть</p>
+          </div>
+        </div>
+        <p class="font-body text-sm text-white/50 leading-relaxed mb-6">
+          Авторские торты и десерты из натуральных ингредиентов. Алматы с 2012 года.
+        </p>
+        <!-- Social -->
+        <div class="flex gap-2.5">
+          <a href="#" class="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:-translate-y-0.5"
+             style="background:rgba(255,255,255,0.08)">
+            <i data-lucide="instagram" style="width:16px;height:16px; color:#F8BBD0"></i>
+          </a>
+          <a href="#" class="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:-translate-y-0.5"
+             style="background:rgba(255,255,255,0.08)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#F8BBD0"><path d="M12 0C5.373 0 0 5.373 0 12c0 2.917 1.043 5.59 2.769 7.67L1.5 22.5l2.967-1.232A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm5.894 16.633c-.246.693-1.452 1.326-2.022 1.41-.508.076-1.146.108-1.852-.117-.428-.136-.978-.318-1.684-.623-2.954-1.276-4.886-4.249-5.036-4.449-.148-.198-1.2-1.598-1.2-3.05 0-1.453.765-2.167.037-2.464-.726-.297-1.152-.446-1.152-.446s.026-.024.026-.024c.244-.067.506-.067.756 0 .18.05.347.126.496.222.297.198.99 1.22.99 1.22s.198.297.198.594c0 .297-.198.495-.396.693-.198.198-.396.396-.396.594 0 .198.099.396.297.594.198.198 1.287 1.99 2.772 2.71.495.247.99.396 1.386.297.396-.099.594-.297.792-.594.198-.297.297-.594.099-.792-.198-.198-1.089-.495-1.287-.594-.198-.099-.297-.099-.396.099-.099.198-.396.495-.495.594-.099.099-.198.099-.297.05-.099-.05-1.386-.643-1.98-1.534-.099-.148-.099-.297 0-.396.099-.099.297-.297.396-.396.099-.099.099-.198.05-.297-.05-.099-.396-.99-.594-1.386-.198-.396-.396-.297-.594-.297h-.495c-.198 0-.495.099-.792.396-.297.297-1.089.99-1.089 2.376 0 1.386.99 2.772 1.188 2.97.198.198 1.98 3.069 4.851 4.257z"/></svg>
+          </a>
+          <a href="#" class="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:-translate-y-0.5"
+             style="background:rgba(255,255,255,0.08)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#F8BBD0"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.94z"/></svg>
+          </a>
+          <a href="https://wa.me/77272000000" target="_blank"
+             class="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:-translate-y-0.5"
+             style="background:rgba(255,255,255,0.08)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#F8BBD0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Branches -->
+      <div class="md:col-span-6">
+        <h4 class="font-body text-xs uppercase tracking-[0.2em] text-white/40 font-semibold mb-5">Наши филиалы</h4>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <template x-for="b in branches" :key="b.name">
+            <div class="flex gap-3 bg-white/5 rounded-xl p-3.5 border border-white/8 hover:border-petal/30 transition-colors">
+              <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style="background:rgba(248,187,208,0.15)">
+                <i data-lucide="map-pin" style="width:13px;height:13px;color:#F8BBD0"></i>
+              </div>
+              <div>
+                <p class="font-body font-semibold text-white text-xs mb-0.5" x-text="b.name"></p>
+                <p class="font-body text-white/50 text-[11px] leading-relaxed" x-text="b.address"></p>
+                <p class="font-body text-petal/70 text-[11px] mt-0.5" x-text="b.hours"></p>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- Contact -->
+      <div class="md:col-span-3">
+        <h4 class="font-body text-xs uppercase tracking-[0.2em] text-white/40 font-semibold mb-5">Контакты</h4>
+        <ul class="space-y-3 mb-6">
+          <li class="flex items-center gap-2.5">
+            <i data-lucide="phone" style="width:14px;height:14px;color:#F8BBD0"></i>
+            <a href="tel:+77272000000" class="font-body text-sm text-white/70 hover:text-petal transition-colors">+7 (727) 200-00-00</a>
+          </li>
+          <li class="flex items-center gap-2.5">
+            <i data-lucide="mail" style="width:14px;height:14px;color:#F8BBD0"></i>
+            <a href="mailto:hello@qulpynai.kz" class="font-body text-sm text-white/70 hover:text-petal transition-colors">hello@qulpynai.kz</a>
+          </li>
+          <li class="flex items-start gap-2.5">
+            <i data-lucide="clock" style="width:14px;height:14px;color:#F8BBD0" class="mt-0.5 shrink-0"></i>
+            <span class="font-body text-sm text-white/70">Пн–Вс: 08:00–22:00</span>
+          </li>
+        </ul>
+
+        <!-- WhatsApp CTA -->
+        <a href="https://wa.me/+77770351204?text=Здравствуйте!%20Хочу%20сделать%20заказ" target="_blank"
+           class="w-full flex items-center justify-center gap-2.5 rounded-2xl py-3.5 font-body font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-lg"
+           style="background: linear-gradient(135deg, #25D366, #128C7E); color: #fff;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+          Заказать в WhatsApp
+        </a>
+      </div>
+
+    </div>
+
+    <!-- Bottom -->
+    <div class="pt-6 flex flex-col sm:flex-row justify-between items-center gap-3">
+      <p class="font-body text-xs text-white/30">© 2024 Qulpynai. Все права защищены.</p>
+      <div class="flex gap-5">
+        <a href="#" class="font-body text-xs text-white/30 hover:text-petal/70 transition-colors">Политика конфиденциальности</a>
+        <a href="#" class="font-body text-xs text-white/30 hover:text-petal/70 transition-colors">Оферта</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+<!-- ═══════════════════════════════════
+     ALPINE.JS APP DATA
+═══════════════════════════════════ -->
+<script>
+function catalogApp() {
+  return {
+    // ── State ──
+    searchQuery: '',
+    activeCategory: 'all',
+    sortBy: 'default',
+    gridCols: 4,
+    filterOpen: false,
+    cartOpen: false,
+    cartAnimated: false,
+    modalProduct: null,
+    selectedSize: null,
+    qty: 1,
+    cart: [],
+
+    // ── Categories ──
+    categories: [
+      { id: 'all',      label: 'Все' },
+      { id: 'cakes',    label: '🎂 Авторские торты' },
+      { id: 'pastry',   label: '🥐 Классическая выпечка' },
+      { id: 'desserts', label: '🍮 Десерты' },
+      { id: 'sets',     label: '🎁 Праздничные наборы' },
+    ],
+
+    // ── Branches ──
+    branches: [
+      { name: 'Медеу',      address: 'ул. Достык, 111, Esentai Mall, 1 эт.', hours: 'Пн–Вс · 09:00–22:00' },
+      { name: 'Бостандык',  address: 'пр. Абая, 52, ТД Керемет',             hours: 'Пн–Вс · 08:00–21:00' },
+      { name: 'Алмалы',     address: 'ул. Байзакова, 280/1, ТЦ Арбат',       hours: 'Пн–Вс · 09:00–21:00' },
+      { name: 'Ауэзов',     address: 'мкр. Аксай-4, ул. Саина, 14',          hours: 'Пн–Вс · 09:00–21:00' },
+      { name: 'Наурызбай',  address: 'ул. Жандосова, 94, 1 этаж',            hours: 'Пн–Вс · 08:00–20:00' },
+      { name: 'Центр (Flagship)', address: 'пр. Байзакова, 209',             hours: 'Пн–Вс · 08:00–23:00' },
+    ],
+
+    // ── Products ──
+    products: [
+      {
+        id: 1, category: 'cakes', catLabel: 'Авторские торты',
+        name: 'Молочная девочка',
+        weight: '1–3 кг · бисквит, сливочный крем',
+        price: 7800, oldPrice: null,
+        badge: 'Хит', badgeType: 'popular', popular: true, isNew: false,
+        image: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&fit=crop&w=600&q=75',
+        description: 'Нежнейший торт из тонких медово-молочных коржей с воздушным сливочным кремом. Тает во рту — невозможно остановиться на одном кусочке.',
+        ingredients: 'Мука в/с, яйца С1, молоко 3.2%, масло 82.5%, сахар, сгущённое молоко, ваниль натуральная.',
+        allergens: 'Глютен, молоко, яйца.',
+        sizes: [
+          { label: '1 кг',   price: 7800 },
+          { label: '1.5 кг', price: 11200 },
+          { label: '2 кг',   price: 14500 },
+          { label: '3 кг',   price: 21000 },
+        ],
+        nutrition: [
+          { label: 'Калории',  value: '342 ккал', pct: 68, color: '#E91E8C' },
+          { label: 'Белки',    value: '5.2 г',    pct: 26, color: '#AD1457' },
+          { label: 'Жиры',     value: '18.4 г',   pct: 74, color: '#F06292' },
+          { label: 'Углеводы', value: '41.6 г',   pct: 83, color: '#CE93D8' },
+        ],
+      },
+      {
+        id: 2, category: 'cakes', catLabel: 'Авторские торты',
+        name: 'Медовик классический',
+        weight: '1–3 кг · медовые коржи',
+        price: 8200, oldPrice: 9500,
+        badge: 'Скидка', badgeType: 'seasonal', popular: false, isNew: false,
+        image: 'https://images.unsplash.com/photo-1571115177098-24ec42ed204d?auto=format&fit=crop&w=600&q=75',
+        description: 'Традиционный медовик с многослойными коржами, пропитанными нежной сметанным кремом. Рецепт передаётся в нашей семье уже три поколения.',
+        ingredients: 'Мука в/с, мёд натуральный, яйца, масло, сахар, сметана 25%, сода.',
+        allergens: 'Глютен, молоко, яйца.',
+        sizes: [
+          { label: '1 кг',   price: 8200 },
+          { label: '1.5 кг', price: 11800 },
+          { label: '2 кг',   price: 15600 },
+        ],
+        nutrition: [
+          { label: 'Калории',  value: '360 ккал', pct: 72, color: '#E91E8C' },
+          { label: 'Белки',    value: '6.1 г',    pct: 30, color: '#AD1457' },
+          { label: 'Жиры',     value: '16.8 г',   pct: 67, color: '#F06292' },
+          { label: 'Углеводы', value: '47.2 г',   pct: 94, color: '#CE93D8' },
+        ],
+      },
+      {
+        id: 3, category: 'cakes', catLabel: 'Авторские торты',
+        name: 'Клубника со сливками',
+        weight: '1–2 кг · свежая клубника',
+        price: 10500, oldPrice: null,
+        badge: 'Хит', badgeType: 'popular', popular: true, isNew: false,
+        image: 'https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?auto=format&fit=crop&w=600&q=75',
+        description: 'Воздушный женуаз с горами свежей клубники и легчайшим взбитым крем-чизом. Летний шедевр, доступный круглый год.',
+        ingredients: 'Бисквит женуаз, клубника свежая, сливки 33%, крем-чиз, сахарная пудра, ваниль.',
+        allergens: 'Глютен, молоко, яйца.',
+        sizes: [
+          { label: '1 кг',   price: 10500 },
+          { label: '1.5 кг', price: 15200 },
+          { label: '2 кг',   price: 19800 },
+        ],
+        nutrition: [
+          { label: 'Калории',  value: '280 ккал', pct: 56, color: '#E91E8C' },
+          { label: 'Белки',    value: '4.8 г',    pct: 24, color: '#AD1457' },
+          { label: 'Жиры',     value: '14.2 г',   pct: 57, color: '#F06292' },
+          { label: 'Углеводы', value: '34.5 г',   pct: 69, color: '#CE93D8' },
+        ],
+      },
+      {
+        id: 4, category: 'cakes', catLabel: 'Авторские торты',
+        name: 'Наполеон',
+        weight: '1–3 кг · слоёное тесто',
+        price: 8900, oldPrice: null,
+        badge: null, badgeType: null, popular: false, isNew: false,
+        image: 'https://images.unsplash.com/photo-1486427944299-d1955d23e34d?auto=format&fit=crop&w=600&q=75',
+        description: 'Хрустящие слоёные коржи домашней раскатки с нежным заварным кремом. Выдерживается 24 часа для идеальной пропитки.',
+        ingredients: 'Мука в/с, масло 82.5%, яйца, молоко 3.2%, сахар, ванилин, соль, уксус.',
+        allergens: 'Глютен, молоко, яйца.',
+        sizes: [
+          { label: '1 кг',   price: 8900 },
+          { label: '1.5 кг', price: 12800 },
+          { label: '2 кг',   price: 16500 },
+          { label: '3 кг',   price: 24000 },
+        ],
+        nutrition: [
+          { label: 'Калории',  value: '380 ккал', pct: 76, color: '#E91E8C' },
+          { label: 'Белки',    value: '5.6 г',    pct: 28, color: '#AD1457' },
+          { label: 'Жиры',     value: '22.1 г',   pct: 88, color: '#F06292' },
+          { label: 'Углеводы', value: '42.8 г',   pct: 86, color: '#CE93D8' },
+        ],
+      },
+      {
+        id: 5, category: 'pastry', catLabel: 'Классическая выпечка',
+        name: 'Круассан классик',
+        weight: '90 г · шт.',
+        price: 850, oldPrice: null,
+        badge: '☀️ Завтрак', badgeType: 'seasonal', popular: false, isNew: false,
+        image: 'https://images.unsplash.com/photo-1464305795204-6f5bbfc7fb81?auto=format&fit=crop&w=600&q=75',
+        description: 'Классический французский круассан из 27 слоёв сдобного теста. Хрустящий снаружи, тающий внутри. Выпекается каждые 2 часа.',
+        ingredients: 'Мука в/с, масло бельгийское 84%, молоко, яйца, сахар, дрожжи, соль.',
+        allergens: 'Глютен, молоко, яйца.',
+        sizes: [{ label: '1 шт', price: 850 }, { label: '6 шт', price: 4800 }],
+        nutrition: [
+          { label: 'Калории',  value: '406 ккал', pct: 81, color: '#E91E8C' },
+          { label: 'Белки',    value: '8.2 г',    pct: 41, color: '#AD1457' },
+          { label: 'Жиры',     value: '24.6 г',   pct: 98, color: '#F06292' },
+          { label: 'Углеводы', value: '38.9 г',   pct: 78, color: '#CE93D8' },
+        ],
+      },
+      {
+        id: 6, category: 'pastry', catLabel: 'Классическая выпечка',
+        name: 'Вупи Пай',
+        weight: '100 г · 2 шт.',
+        price: 1200, oldPrice: null,
+        badge: 'Новинка', badgeType: 'new', popular: false, isNew: true,
+        image: 'https://images.unsplash.com/photo-1548365328-8c6db3220e4c?auto=format&fit=crop&w=600&q=75',
+        description: 'Американские шоколадные пирожные с мягким маршмэллоу-кремом. Нежные и влажные внутри с интенсивным шоколадным вкусом.',
+        ingredients: 'Мука, какао алкализованное, масло, яйца, кефир, сода, сахар, маршмэллоу, сливки.',
+        allergens: 'Глютен, молоко, яйца, соя.',
+        sizes: [{ label: '1 шт', price: 650 }, { label: '2 шт', price: 1200 }, { label: '6 шт', price: 3400 }],
+        nutrition: [
+          { label: 'Калории',  value: '328 ккал', pct: 66, color: '#E91E8C' },
+          { label: 'Белки',    value: '4.4 г',    pct: 22, color: '#AD1457' },
+          { label: 'Жиры',     value: '15.2 г',   pct: 61, color: '#F06292' },
+          { label: 'Углеводы', value: '45.1 г',   pct: 90, color: '#CE93D8' },
+        ],
+      },
+      {
+        id: 7, category: 'pastry', catLabel: 'Классическая выпечка',
+        name: 'Эклер ванильный',
+        weight: '80 г · шт.',
+        price: 750, oldPrice: null,
+        badge: 'Хит', badgeType: 'popular', popular: true, isNew: false,
+        image: 'https://images.unsplash.com/photo-1612203986628-d5bdf3b0bde8?auto=format&fit=crop&w=600&q=75',
+        description: 'Классический французский эклер с нежным заварным кремом и хрустящей шоколадной глазурью. Готовится по традиционному рецепту.',
+        ingredients: 'Мука, вода, масло, яйца, молоко, сахар, крахмал, ваниль, шоколад бельгийский.',
+        allergens: 'Глютен, молоко, яйца.',
+        sizes: [{ label: '1 шт', price: 750 }, { label: '6 шт', price: 4200 }, { label: '12 шт', price: 8000 }],
+        nutrition: [
+          { label: 'Калории',  value: '295 ккал', pct: 59, color: '#E91E8C' },
+          { label: 'Белки',    value: '6.8 г',    pct: 34, color: '#AD1457' },
+          { label: 'Жиры',     value: '14.8 г',   pct: 59, color: '#F06292' },
+          { label: 'Углеводы', value: '36.2 г',   pct: 72, color: '#CE93D8' },
+        ],
+      },
+      {
+        id: 8, category: 'pastry', catLabel: 'Классическая выпечка',
+        name: 'Профитроль с кремом',
+        weight: '250 г · 6 шт.',
+        price: 1800, oldPrice: 2200,
+        badge: 'Скидка', badgeType: 'seasonal', popular: false, isNew: false,
+        image: 'https://images.unsplash.com/photo-1550617931-e17a7b70dce2?auto=format&fit=crop&w=600&q=75',
+        description: 'Хрустящие шарики из заварного теста, наполненные воздушным кремом патисьер и политые тёмным шоколадом.',
+        ingredients: 'Мука, масло, яйца, вода, соль, молоко, сахар, ваниль, шоколад 72%.',
+        allergens: 'Глютен, молоко, яйца.',
+        sizes: [{ label: '6 шт (250г)', price: 1800 }, { label: '12 шт (500г)', price: 3400 }],
+        nutrition: [
+          { label: 'Калории',  value: '312 ккал', pct: 62, color: '#E91E8C' },
+          { label: 'Белки',    value: '7.1 г',    pct: 36, color: '#AD1457' },
+          { label: 'Жиры',     value: '17.4 г',   pct: 70, color: '#F06292' },
+          { label: 'Углеводы', value: '34.8 г',   pct: 70, color: '#CE93D8' },
+        ],
+      },
+      {
+        id: 9, category: 'desserts', catLabel: 'Десерты',
+        name: 'Макаронс ассорти',
+        weight: '12 шт · 240 г',
+        price: 3600, oldPrice: null,
+        badge: 'Хит', badgeType: 'popular', popular: true, isNew: false,
+        image: 'https://images.unsplash.com/photo-1541427468627-a89a96e5ca1d?auto=format&fit=crop&w=600&q=75',
+        description: '12 макаронс 6 вкусов: малина, фисташка, шоколад, лаванда, ваниль Бурбон, лимон. Идеальный подарок.',
+        ingredients: 'Миндальная мука, сахарная пудра, белки, масло, натуральные красители и ароматизаторы.',
+        allergens: 'Орехи (миндаль), яйца. Без глютена.',
+        sizes: [{ label: '6 шт', price: 1900 }, { label: '12 шт', price: 3600 }, { label: '24 шт', price: 6800 }],
+        nutrition: [
+          { label: 'Калории',  value: '420 ккал', pct: 84, color: '#E91E8C' },
+          { label: 'Белки',    value: '6.2 г',    pct: 31, color: '#AD1457' },
+          { label: 'Жиры',     value: '18.8 г',   pct: 75, color: '#F06292' },
+          { label: 'Углеводы', value: '59.4 г',   pct: 100, color: '#CE93D8' },
+        ],
+      },
+      {
+        id: 10, category: 'desserts', catLabel: 'Десерты',
+        name: 'Панна-котта клубника',
+        weight: '150 г · порция',
+        price: 1100, oldPrice: null,
+        badge: 'Новинка', badgeType: 'new', popular: false, isNew: true,
+        image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=600&q=75',
+        description: 'Итальянский десерт из нежных сливок с желатином, увенчанный конфитюром из свежей клубники и мятой.',
+        ingredients: 'Сливки 33%, молоко, желатин, сахар, ваниль, клубника свежая, лимонный сок.',
+        allergens: 'Молоко.',
+        sizes: [{ label: '150 г', price: 1100 }],
+        nutrition: [
+          { label: 'Калории',  value: '198 ккал', pct: 40, color: '#E91E8C' },
+          { label: 'Белки',    value: '3.2 г',    pct: 16, color: '#AD1457' },
+          { label: 'Жиры',     value: '12.6 г',   pct: 50, color: '#F06292' },
+          { label: 'Углеводы', value: '20.4 г',   pct: 41, color: '#CE93D8' },
+        ],
+      },
+      {
+        id: 11, category: 'desserts', catLabel: 'Десерты',
+        name: 'Тирамису',
+        weight: '200 г · порция',
+        price: 1400, oldPrice: null,
+        badge: null, badgeType: null, popular: false, isNew: false,
+        image: 'https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?auto=format&fit=crop&w=600&q=75',
+        description: 'Классическое итальянское тирамису с mascarpone, пропитанными эспрессо бисквитами savoiardi и какао-дустом сверху.',
+        ingredients: 'Маскарпоне, яйца, сахар, печенье savoiardi, эспрессо, ликёр амаретто, какао.',
+        allergens: 'Глютен, молоко, яйца.',
+        sizes: [{ label: '200 г', price: 1400 }, { label: '400 г', price: 2600 }],
+        nutrition: [
+          { label: 'Калории',  value: '282 ккал', pct: 56, color: '#E91E8C' },
+          { label: 'Белки',    value: '5.4 г',    pct: 27, color: '#AD1457' },
+          { label: 'Жиры',     value: '16.2 г',   pct: 65, color: '#F06292' },
+          { label: 'Углеводы', value: '28.8 г',   pct: 58, color: '#CE93D8' },
+        ],
+      },
+      {
+        id: 12, category: 'desserts', catLabel: 'Десерты',
+        name: 'Чизкейк Нью-Йорк',
+        weight: '120 г · порция',
+        price: 1300, oldPrice: null,
+        badge: 'Хит', badgeType: 'popular', popular: true, isNew: false,
+        image: 'https://images.unsplash.com/photo-1508737027454-e6454ef45afd?auto=format&fit=crop&w=600&q=75',
+        description: 'Плотный сливочный чизкейк на корже из американского печенья, с ягодным соусом или карамелью. Выдерживается 24 часа.',
+        ingredients: 'Крем-чиз, сливки, яйца, сахар, ваниль, печенье Oreo, масло, крахмал.',
+        allergens: 'Глютен, молоко, яйца.',
+        sizes: [{ label: '120 г', price: 1300 }, { label: 'Целый (1.2кг)', price: 9800 }],
+        nutrition: [
+          { label: 'Калории',  value: '318 ккал', pct: 64, color: '#E91E8C' },
+          { label: 'Белки',    value: '6.8 г',    pct: 34, color: '#AD1457' },
+          { label: 'Жиры',     value: '20.4 г',   pct: 82, color: '#F06292' },
+          { label: 'Углеводы', value: '29.2 г',   pct: 58, color: '#CE93D8' },
+        ],
+      },
+      {
+        id: 13, category: 'sets', catLabel: 'Праздничные наборы',
+        name: 'Подарочный бокс «Розовый»',
+        weight: '18 шт · ассорти',
+        price: 6500, oldPrice: null,
+        badge: 'Хит', badgeType: 'popular', popular: true, isNew: false,
+        image: 'https://images.unsplash.com/photo-1607920591413-4ec007e70023?auto=format&fit=crop&w=600&q=75',
+        description: 'Праздничный набор в дизайнерской коробке: 6 макаронс, 4 трюфеля, 4 конфеты ручной работы, 4 мармелада. Идеально для подарка.',
+        ingredients: 'Макаронс, трюфели шоколадные, конфеты ассорти, мармелад фруктовый.',
+        allergens: 'Глютен, молоко, яйца, орехи.',
+        sizes: [{ label: '18 шт', price: 6500 }, { label: '36 шт (large)', price: 12000 }],
+        nutrition: [
+          { label: 'Калории',  value: '390 ккал', pct: 78, color: '#E91E8C' },
+          { label: 'Белки',    value: '4.6 г',    pct: 23, color: '#AD1457' },
+          { label: 'Жиры',     value: '20.2 г',   pct: 81, color: '#F06292' },
+          { label: 'Углеводы', value: '52.4 г',   pct: 100, color: '#CE93D8' },
+        ],
+      },
+      {
+        id: 14, category: 'sets', catLabel: 'Праздничные наборы',
+        name: 'Набор «День рождения»',
+        weight: 'Торт 1 кг + 6 пирожных',
+        price: 14500, oldPrice: null,
+        badge: 'Новинка', badgeType: 'new', popular: false, isNew: true,
+        image: 'https://images.unsplash.com/photo-1558301211-0d8c8ddee6ec?auto=format&fit=crop&w=600&q=75',
+        description: 'Комплект к празднику: торт Молочная девочка 1 кг + 6 пирожных ассорти + открытка с поздравлением и доставка в фирменной упаковке.',
+        ingredients: 'Состав торта + пирожных ассорти по вашему выбору.',
+        allergens: 'Глютен, молоко, яйца. Уточняйте состав при заказе.',
+        sizes: [{ label: 'Стандарт (1 кг торт)', price: 14500 }, { label: 'Большой (2 кг торт)', price: 22000 }],
+        nutrition: [
+          { label: 'Калории',  value: '340 ккал', pct: 68, color: '#E91E8C' },
+          { label: 'Белки',    value: '5.8 г',    pct: 29, color: '#AD1457' },
+          { label: 'Жиры',     value: '17.6 г',   pct: 70, color: '#F06292' },
+          { label: 'Углеводы', value: '43.2 г',   pct: 86, color: '#CE93D8' },
+        ],
+      },
+      {
+        id: 15, category: 'sets', catLabel: 'Праздничные наборы',
+        name: 'Корпоративный набор',
+        weight: '30 шт · ассорти',
+        price: 12000, oldPrice: null,
+        badge: null, badgeType: null, popular: false, isNew: false,
+        image: 'https://images.unsplash.com/photo-1531685250784-7569952593d2?auto=format&fit=crop&w=600&q=75',
+        description: 'Представительный набор для корпоративных мероприятий. Индивидуальный брендинг, логотип компании на упаковке. Уточните детали при заказе.',
+        ingredients: 'Ассорти по выбору клиента. Индивидуальное формирование набора.',
+        allergens: 'Уточняется при заказе.',
+        sizes: [{ label: '30 шт', price: 12000 }, { label: '60 шт', price: 22000 }, { label: '100 шт', price: 35000 }],
+        nutrition: [
+          { label: 'Калории',  value: '~350 ккал', pct: 70, color: '#E91E8C' },
+          { label: 'Белки',    value: '~5.5 г',    pct: 28, color: '#AD1457' },
+          { label: 'Жиры',     value: '~18 г',     pct: 72, color: '#F06292' },
+          { label: 'Углеводы', value: '~44 г',     pct: 88, color: '#CE93D8' },
+        ],
+      },
+    ],
+
+    // ── Computed ──
+    get filteredProducts() {
+      let list = this.products;
+
+      // Category
+      if (this.activeCategory !== 'all') {
+        list = list.filter(p => p.category === this.activeCategory);
+      }
+
+      // Search
+      if (this.searchQuery.trim()) {
+        const q = this.searchQuery.toLowerCase().trim();
+        list = list.filter(p =>
+          p.name.toLowerCase().includes(q) ||
+          p.catLabel.toLowerCase().includes(q) ||
+          p.weight.toLowerCase().includes(q)
+        );
+      }
+
+      // Sort
+      const s = this.sortBy;
+      list = [...list];
+      if (s === 'price_asc')  list.sort((a, b) => a.price - b.price);
+      if (s === 'price_desc') list.sort((a, b) => b.price - a.price);
+      if (s === 'popular')    list.sort((a, b) => (b.popular ? 1 : 0) - (a.popular ? 1 : 0));
+      if (s === 'new')        list.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
+
+      return list;
+    },
+
+    get cartCount() {
+      return this.cart.reduce((s, i) => s + i.qty, 0);
+    },
+
+    get cartTotal() {
+      return this.cart.reduce((s, i) => s + i.price * i.qty, 0);
+    },
+
+    // ── Methods ──
+    init() {
+      this.$nextTick(() => { lucide.createIcons(); });
+      this.$watch('filteredProducts', () => { this.$nextTick(() => lucide.createIcons()); });
+      this.$watch('modalProduct',     () => { this.$nextTick(() => lucide.createIcons()); });
+      this.$watch('cartOpen',         () => { this.$nextTick(() => lucide.createIcons()); });
+    },
+
+    openModal(p) {
+      this.modalProduct = p;
+      this.selectedSize = p.sizes?.[0] || null;
+      this.qty = 1;
+      document.body.style.overflow = 'hidden';
+      this.$nextTick(() => lucide.createIcons());
+    },
+
+    closeModal() {
+      this.modalProduct = null;
+      document.body.style.overflow = '';
+    },
+
+    addToCart(p) {
+      const existing = this.cart.find(i => i.id === p.id && i.size === p.weight);
+      if (existing) { existing.qty++; }
+      else {
+        this.cart.push({ id: p.id, name: p.name, image: p.image, price: p.price, size: p.weight, qty: 1 });
+      }
+      this.flashCart();
+    },
+
+    addToCartFromModal() {
+      const price = this.selectedSize?.price || this.modalProduct?.price || 0;
+      const size  = this.selectedSize?.label || this.modalProduct?.weight;
+      const key = `${this.modalProduct.id}-${size}`;
+      const existing = this.cart.find(i => i._key === key);
+      if (existing) { existing.qty += this.qty; }
+      else {
+        this.cart.push({
+          _key: key,
+          id: this.modalProduct.id,
+          name: this.modalProduct.name,
+          image: this.modalProduct.image,
+          price,
+          size,
+          qty: this.qty,
+        });
+      }
+      this.flashCart();
+      this.closeModal();
+      this.cartOpen = true;
+    },
+
+    changeQty(index, delta) {
+      this.cart[index].qty += delta;
+      if (this.cart[index].qty <= 0) this.cart.splice(index, 1);
+    },
+
+    flashCart() {
+      this.cartAnimated = true;
+      setTimeout(() => { this.cartAnimated = false; }, 400);
+      this.$nextTick(() => lucide.createIcons());
+    },
+  };
+}
+</script>
+
+</body>
+</html>
