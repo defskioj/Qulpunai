@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="ru" x-data="catalogApp()" x-init="init()">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Qulpynai - Каталог десертов</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brandbg: '#FDFBF7', 
+            brandtext: '#382E2C', 
+            brandaccent: '#E32636', 
+            brandmuted: '#F8F4F1', 
+            brandborder: '#EAE0DA',
+          },
+          fontFamily: {
+            display: ['"Playfair Display"', 'serif'],
+            body:    ['"DM Sans"', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    :root {
+      --brandbg: #FDFBF7;
+      --brandtext: #382E2C;
+      --brandaccent: #E32636;
+      --brandmuted: #F8F4F1;
+      --brandborder: #EAE0DA;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--brandbg);
+      color: var(--brandtext);
+      overflow-x: hidden;
+    }
+
+    /* ── Grain ── */
+    body::after {
+      content: ''; position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--brandbg); }
+    ::-webkit-scrollbar-thumb { background: var(--brandborder); border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--brandtext); }
+
+    /* ── Nav ── */
+    .nav-glass {
+      background: rgba(253,251,247,0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--brandborder);
+    }
+
+    /* ── Product card ── */
+    .product-card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      cursor: pointer;
+    }
+    .product-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 30px -10px rgba(56, 46, 44, 0.08);
+    }
+    .card-img-wrap { overflow: hidden; }
+    .card-img-wrap img { transition: transform 0.6s ease; }
+    .product-card:hover .card-img-wrap img { transform: scale(1.05); }
+
+    /* ── Buttons ── */
+    .btn-solid {
+      background: var(--brandaccent);
+      color: #fff;
+      transition: all 0.2s ease;
+    }
+    .btn-solid:hover { background: #C81D2D; }
+
+    .btn-elegant {
+      border: 1px solid var(--brandaccent);
+      color: var(--brandaccent);
+      background: transparent;
+      transition: all 0.2s ease;
+    }
+    .btn-elegant:hover {
+      background: var(--brandaccent);
+      color: #fff;
+    }
+
+    /* ── Badges ── */
+    .badge-accent {
+      border: 1px solid var(--brandaccent);
+      color: var(--brandaccent);
+      background: #fff;
+      font-size: 0.62rem;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Filters ── */
+    .filter-pill {
+      border: 1px solid var(--brandborder);
+      background: #fff;
+      color: var(--brandtext);
+      transition: all 0.2s ease;
+    }
+    .filter-pill:hover { border-color: var(--brandtext); }
+    .filter-pill.active {
+      border-color: var(--brandaccent);
+      color: var(--brandaccent);
+      background: var(--brandmuted);
+    }
+
+    /* ── Search ── */
+    .search-input:focus { outline: none; }
+
+    /* ── Cart badge ── */
+    .badge-pop { animation: pop 0.3s ease; }
+    @keyframes pop { 0%{transform:scale(1);} 50%{transform:scale(1.3);} 100%{transform:scale(1);} }
+
+    /* ── Modal ── */
+    .modal-enter { animation: fadeUp 0.3s ease both; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .modal-overlay-enter { animation: fadeIn 0.2s ease both; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* ── Cart drawer ── */
+    .cart-drawer { transition: transform 0.3s ease; }
+    .cart-drawer.open { transform: translateX(0); }
+    .cart-drawer.closed { transform: translateX(100%); }
+
+    select { appearance: none; -webkit-appearance: none; cursor: pointer; }
+
+    [x-cloak] { display: none !important; }
+  </style>
+</head>
+
+<body>
+
+<!-- ═══════════════════════════════════
+     STICKY NAVIGATION
+═══════════════════════════════════ -->
+<header class="nav-glass sticky top-0 z-50 w-full">
+  <div class="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center gap-4">
+
+    <!-- Logo -->
+    <a href="index.html" class="flex items-center gap-2.5 shrink-0 group">
+      <div class="w-8 h-8 rounded-full border border-brandaccent flex items-center justify-center group-hover:bg-brandmuted transition-colors">
+        <span class="text-sm leading-none">🍓</span>
+      </div>
+      <div class="hidden sm:block">
+        <p class="font-display font-semibold text-brandtext text-lg leading-none tracking-wide">Qulpynai</p>
+      </div>
+    </a>
+
+    <!-- Search -->
+    <div class="flex-1 max-w-md mx-auto relative group">
+      <div class="relative flex items-center bg-white border border-brandborder rounded-full px-4 py-2 gap-2 group-hover:border-brandtext/30 transition-colors">
+        <i data-lucide="search" class="w-4 h-4 text-brandtext/50 shrink-0"></i>
+        <input
+          type="text"
+          x-model="searchQuery"
+          placeholder="Поиск..."
+          class="search-input flex-1 bg-transparent font-body text-sm text-brandtext placeholder-brandtext/40 min-w-0"/>
+        <button x-show="searchQuery" @click="searchQuery=''" class="text-brandtext/50 hover:text-brandaccent transition-colors">
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Right actions -->
+    <div class="flex items-center gap-2 shrink-0">
+      <button class="relative w-9 h-9 rounded-full hover:bg-brandmuted flex items-center justify-center transition-colors text-brandtext">
+        <i data-lucide="heart" class="w-4.5 h-4.5" style="width:16px;height:16px"></i>
+      </button>
+
+      <button @click="cartOpen = !cartOpen"
+              class="relative w-9 h-9 rounded-full hover:bg-brandmuted flex items-center justify-center transition-colors text-brandtext">
+        <i data-lucide="shopping-bag" style="width:16px;height:16px"></i>
+        <span x-show="cartCount > 0" x-cloak
+              :class="{ 'badge-pop': cartAnimated }"
+              class="absolute -top-1 -right-1 min-w-[16px] h-[16px] rounded-full bg-brandaccent text-white text-[9px] font-bold flex items-center justify-center px-1"
+              x-text="cartCount"></span>
+      </button>
+
+      <button @click="filterOpen = !filterOpen"
+              class="md:hidden w-9 h-9 rounded-full hover:bg-brandmuted flex items-center justify-center transition-colors text-brandtext">
+        <i data-lucide="sliders-horizontal" style="width:16px;height:16px"></i>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════
+     HERO BANNER
+═══════════════════════════════════ -->
+<section class="bg-brandmuted border-b border-brandborder px-4 md:px-8 pt-10 pb-14 text-center">
+  <div class="max-w-2xl mx-auto">
+    <p class="font-body text-xs tracking-[0.2em] uppercase text-brandaccent font-semibold mb-3">Каталог</p>
+    <h1 class="font-display text-4xl md:text-5xl font-bold text-brandtext mb-4">Наше меню</h1>
+    <p class="font-body text-brandtext/70 text-sm md:text-base leading-relaxed">
+      Натуральные ингредиенты и свежая выпечка каждый день. Выберите свой идеальный десерт.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════
+     MAIN CONTENT
+═══════════════════════════════════ -->
+<main class="max-w-7xl mx-auto px-4 md:px-8 py-10 pb-20">
+
+  <!-- ── Filter Bar ── -->
+  <div class="mb-8">
+    <div x-show="filterOpen" x-cloak class="md:hidden mb-4 bg-white rounded-2xl border border-brandborder p-5">
+      <p class="font-body text-xs uppercase tracking-widest text-brandtext/50 font-semibold mb-3">Категории</p>
+      <div class="flex flex-wrap gap-2">
+        <template x-for="cat in categories" :key="cat.id">
+          <button
+            @click="activeCategory = cat.id; filterOpen = false"
+            :class="activeCategory === cat.id ? 'active' : ''"
+            class="filter-pill rounded-full px-4 py-1.5 text-xs font-body font-medium">
+            <span x-text="cat.label"></span>
+          </button>
+        </template>
+      </div>
+    </div>
+
+    <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+      <div class="hidden md:flex flex-wrap gap-2">
+        <template x-for="cat in categories" :key="cat.id">
+          <button
+            @click="activeCategory = cat.id"
+            :class="activeCategory === cat.id ? 'active' : ''"
+            class="filter-pill rounded-full px-5 py-2 text-sm font-body font-medium shadow-sm">
+            <span x-text="cat.label"></span>
+          </button>
+        </template>
+      </div>
+
+      <div class="flex items-center gap-3 w-full md:w-auto">
+        <p class="font-body text-xs text-brandtext/60 mr-auto md:mr-0">
+          Найдено: <span class="font-semibold text-brandtext" x-text="filteredProducts.length"></span>
+        </p>
+
+        <div class="relative">
+          <select x-model="sortBy"
+                  class="font-body text-xs text-brandtext bg-white border border-brandborder rounded-full pl-4 pr-8 py-2 focus:border-brandaccent transition-colors">
+            <option value="default">По умолчанию</option>
+            <option value="price_asc">Дешевле</option>
+            <option value="price_desc">Дороже</option>
+            <option value="popular">Популярные</option>
+            <option value="new">Новинки</option>
+          </select>
+          <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-brandtext/50">
+            <i data-lucide="chevron-down" style="width:12px;height:12px"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Product Grid ── -->
+  <div x-show="filteredProducts.length > 0">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
+      <template x-for="(p, index) in filteredProducts" :key="p.id">
+        <article
+          @click="openModal(p)"
+          class="product-card bg-white rounded-2xl border border-brandborder flex flex-col overflow-hidden">
+          
+          <!-- Image -->
+          <div class="card-img-wrap relative h-48 border-b border-brandborder">
+            <img :src="p.image" :alt="p.name"
+                 class="w-full h-full object-cover"
+                 loading="lazy"/>
+            <div x-show="p.badge" class="absolute top-3 right-3">
+              <span class="badge-accent rounded-full px-2.5 py-1 font-body font-semibold uppercase" x-text="p.badge"></span>
+            </div>
+          </div>
+
+          <!-- Content -->
+          <div class="p-4 flex flex-col flex-1">
+            <p class="font-body text-[10px] uppercase tracking-widest text-brandtext/50 font-semibold mb-1" x-text="p.catLabel"></p>
+            <h3 class="font-display font-semibold text-brandtext text-lg leading-snug mb-1" x-text="p.name"></h3>
+            <p class="font-body text-xs text-brandtext/60 mb-4 flex-1" x-text="p.weight"></p>
+
+            <div class="flex items-center justify-between mt-auto">
+              <div>
+                <p class="font-body font-semibold text-brandtext text-sm" x-text="p.price + ' ₸'"></p>
+              </div>
+              <button @click.stop="addToCart(p)"
+                      class="w-8 h-8 rounded-full border border-brandborder text-brandtext flex items-center justify-center hover:border-brandaccent hover:text-brandaccent transition-colors">
+                <i data-lucide="plus" style="width:14px;height:14px"></i>
+              </button>
+            </div>
+          </div>
+        </article>
+      </template>
+    </div>
+  </div>
+
+  <!-- ── Empty state ── -->
+  <div x-show="filteredProducts.length === 0" x-cloak class="text-center py-20 border border-brandborder rounded-2xl bg-white mt-8">
+    <h3 class="font-display text-xl font-bold text-brandtext mb-2">Ничего не найдено</h3>
+    <p class="font-body text-brandtext/60 text-sm mb-6">Попробуйте изменить запрос</p>
+    <button @click="searchQuery=''; activeCategory='all'"
+            class="btn-elegant rounded-full px-6 py-2 font-body font-medium text-sm">
+      Сбросить фильтры
+    </button>
+  </div>
+
+</main>
+
+<!-- ═══════════════════════════════════
+     PRODUCT MODAL
+═══════════════════════════════════ -->
+<div x-show="modalProduct !== null" x-cloak
+     @keydown.escape.window="closeModal()"
+     class="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4">
+
+  <div class="modal-overlay-enter absolute inset-0 bg-brandtext/50 backdrop-blur-sm" @click="closeModal()"></div>
+
+  <div class="modal-enter relative bg-brandbg w-full md:max-w-2xl md:rounded-2xl rounded-t-2xl overflow-hidden shadow-xl max-h-[90vh] flex flex-col"
+       x-show="modalProduct !== null">
+
+    <button @click="closeModal()"
+            class="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-white/90 border border-brandborder flex items-center justify-center text-brandtext hover:text-brandaccent transition-colors">
+      <i data-lucide="x" style="width:14px;height:14px"></i>
+    </button>
+
+    <div class="overflow-y-auto flex-1">
+      <div class="relative h-56 shrink-0 border-b border-brandborder">
+        <img :src="modalProduct?.image" :alt="modalProduct?.name" class="w-full h-full object-cover"/>
+      </div>
+
+      <div class="p-6">
+        <p class="font-body text-[10px] uppercase tracking-widest text-brandtext/50 font-semibold mb-1" x-text="modalProduct?.catLabel"></p>
+        <h2 class="font-display text-2xl font-bold text-brandtext mb-4" x-text="modalProduct?.name"></h2>
+        
+        <p class="font-body text-sm text-brandtext/80 leading-relaxed mb-6" x-text="modalProduct?.description"></p>
+
+        <div class="mb-6">
+          <h4 class="font-body text-xs uppercase tracking-widest text-brandtext/50 font-semibold mb-2">Состав</h4>
+          <p class="font-body text-xs text-brandtext/70 leading-relaxed" x-text="modalProduct?.ingredients"></p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6 mb-2">
+          <div x-show="modalProduct?.sizes?.length > 0">
+            <h4 class="font-body text-xs uppercase tracking-widest text-brandtext/50 font-semibold mb-3">Варианты</h4>
+            <div class="flex flex-wrap gap-2">
+              <template x-for="sz in (modalProduct?.sizes || [])" :key="sz.label">
+                <button
+                  @click="selectedSize = sz"
+                  :class="selectedSize?.label === sz.label ? 'border-brandaccent text-brandaccent bg-white' : 'border-brandborder text-brandtext bg-white'"
+                  class="border rounded-xl px-4 py-2 text-xs font-body transition-colors">
+                  <span class="font-semibold block" x-text="sz.label"></span>
+                  <span class="block opacity-80" x-text="sz.price + ' ₸'"></span>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="font-body text-xs uppercase tracking-widest text-brandtext/50 font-semibold mb-3">Количество</h4>
+            <div class="inline-flex items-center border border-brandborder rounded-xl bg-white">
+              <button @click="qty = Math.max(1, qty - 1)" class="w-10 h-9 flex items-center justify-center text-brandtext hover:text-brandaccent"><i data-lucide="minus" style="width:12px"></i></button>
+              <div class="w-10 text-center font-body text-sm font-semibold text-brandtext" x-text="qty"></div>
+              <button @click="qty++" class="w-10 h-9 flex items-center justify-center text-brandtext hover:text-brandaccent"><i data-lucide="plus" style="width:12px"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer actions -->
+    <div class="px-6 py-4 bg-white border-t border-brandborder flex items-center justify-between gap-4 shrink-0">
+      <div>
+        <p class="font-body text-[10px] uppercase tracking-widest text-brandtext/50 font-semibold mb-1">Итого</p>
+        <p class="font-body font-semibold text-brandtext text-lg"
+           x-text="((selectedSize?.price || modalProduct?.price || 0) * qty).toLocaleString('ru') + ' ₸'"></p>
+      </div>
+      <button @click="addToCartFromModal()"
+              class="btn-solid rounded-full px-8 py-2.5 font-body font-medium text-sm">
+        В корзину
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     CART DRAWER
+═══════════════════════════════════ -->
+<div x-show="cartOpen" x-cloak class="fixed inset-0 z-[90]">
+  <div class="absolute inset-0 bg-brandtext/40 backdrop-blur-sm" @click="cartOpen = false"></div>
+  <div :class="cartOpen ? 'open' : 'closed'"
+       class="cart-drawer absolute right-0 top-0 bottom-0 w-full max-w-sm bg-brandbg shadow-xl flex flex-col border-l border-brandborder">
+
+    <div class="px-6 py-5 border-b border-brandborder flex items-center justify-between bg-white">
+      <h3 class="font-display font-semibold text-brandtext text-lg">Корзина</h3>
+      <button @click="cartOpen = false" class="text-brandtext/50 hover:text-brandaccent transition-colors">
+        <i data-lucide="x" style="width:18px;height:18px"></i>
+      </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+      <template x-if="cart.length === 0">
+        <div class="text-center py-10">
+          <p class="font-body text-brandtext/50 text-sm">Корзина пуста</p>
+        </div>
+      </template>
+      <template x-for="(item, i) in cart" :key="i">
+        <div class="flex gap-3 bg-white border border-brandborder rounded-xl p-3">
+          <img :src="item.image" class="w-12 h-12 rounded-lg object-cover border border-brandborder shrink-0"/>
+          <div class="flex-1 min-w-0">
+            <p class="font-body font-semibold text-brandtext text-xs truncate" x-text="item.name"></p>
+            <p class="font-body text-[10px] text-brandtext/60" x-text="item.size || item.weight"></p>
+            <div class="flex items-center justify-between mt-2">
+              <p class="font-body font-semibold text-brandtext text-xs" x-text="(item.price * item.qty).toLocaleString('ru') + ' ₸'"></p>
+              <div class="flex items-center gap-2 border border-brandborder rounded-full px-2 py-0.5">
+                <button @click="changeQty(i, -1)" class="text-brandtext/50 hover:text-brandaccent"><i data-lucide="minus" style="width:10px"></i></button>
+                <span class="font-body text-[10px] font-semibold w-3 text-center" x-text="item.qty"></span>
+                <button @click="changeQty(i, 1)" class="text-brandtext/50 hover:text-brandaccent"><i data-lucide="plus" style="width:10px"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <div x-show="cart.length > 0" class="px-6 py-5 border-t border-brandborder bg-white">
+      <div class="flex justify-between mb-4">
+        <p class="font-body text-sm text-brandtext/60">Итого</p>
+        <p class="font-body font-semibold text-brandtext text-lg" x-text="cartTotal.toLocaleString('ru') + ' ₸'"></p>
+      </div>
+      <button class="btn-solid w-full rounded-full py-3 font-body font-medium text-sm mb-2">
+        Оформить заказ
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     FOOTER
+═══════════════════════════════════ -->
+<footer class="bg-brandmuted border-t border-brandborder text-brandtext pt-10 pb-6 px-4 md:px-8">
+  <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+    <div class="flex items-center gap-2">
+      <div class="w-6 h-6 border border-brandaccent rounded-full flex items-center justify-center">
+        <span class="text-[10px]">🍓</span>
+      </div>
+      <span class="font-display font-semibold text-sm text-brandtext">Qulpynai</span>
+    </div>
+    <p class="font-body text-[11px] text-brandtext/50">© 2024 Qulpynai. Все права защищены.</p>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════
+     ALPINE.JS APP DATA
+═══════════════════════════════════ -->
+<script>
+function catalogApp() {
+  return {
+    searchQuery: '',
+    activeCategory: 'all',
+    sortBy: 'default',
+    filterOpen: false,
+    cartOpen: false,
+    cartAnimated: false,
+    modalProduct: null,
+    selectedSize: null,
+    qty: 1,
+    cart: [],
+    categories: [
+      { id: 'all',      label: 'Все' },
+      { id: 'cakes',    label: 'Авторские торты' },
+      { id: 'pastry',   label: 'Выпечка' },
+      { id: 'desserts', label: 'Десерты' },
+      { id: 'sets',     label: 'Наборы' },
+    ],
+    products: [
+      {
+        id: 1, category: 'cakes', catLabel: 'Авторские торты', name: 'Молочная девочка', weight: '1–3 кг',
+        price: 7800, badge: 'Хит', popular: true, isNew: false, image: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&fit=crop&w=600&q=75',
+        description: 'Нежнейший торт из медово-молочных коржей со сливочным кремом.', ingredients: 'Мука в/с, яйца, молоко, масло, сахар.',
+        sizes: [{ label: '1 кг', price: 7800 }, { label: '2 кг', price: 14500 }]
+      },
+      {
+        id: 2, category: 'cakes', catLabel: 'Авторские торты', name: 'Медовик классический', weight: '1–3 кг',
+        price: 8200, badge: null, popular: false, isNew: false, image: 'https://images.unsplash.com/photo-1571115177098-24ec42ed204d?auto=format&fit=crop&w=600&q=75',
+        description: 'Традиционный медовик с коржами, пропитанными сметанным кремом.', ingredients: 'Мука в/с, мёд, яйца, масло, сметана.',
+        sizes: [{ label: '1 кг', price: 8200 }, { label: '2 кг', price: 15600 }]
+      },
+      {
+        id: 3, category: 'cakes', catLabel: 'Авторские торты', name: 'Клубника со сливками', weight: '1–2 кг',
+        price: 10500, badge: 'Хит', popular: true, isNew: false, image: 'https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?auto=format&fit=crop&w=600&q=75',
+        description: 'Воздушный женуаз с горами свежей клубники и крем-чизом.', ingredients: 'Бисквит, клубника, сливки, крем-чиз.',
+        sizes: [{ label: '1 кг', price: 10500 }, { label: '2 кг', price: 19800 }]
+      },
+      {
+        id: 4, category: 'cakes', catLabel: 'Авторские торты', name: 'Наполеон', weight: '1–3 кг',
+        price: 8900, badge: null, popular: false, isNew: false, image: 'https://images.unsplash.com/photo-1486427944299-d1955d23e34d?auto=format&fit=crop&w=600&q=75',
+        description: 'Хрустящие слоёные коржи с нежным заварным кремом.', ingredients: 'Мука, масло 82.5%, яйца, молоко.',
+        sizes: [{ label: '1 кг', price: 8900 }, { label: '2 кг', price: 16500 }]
+      },
+      {
+        id: 5, category: 'pastry', catLabel: 'Классическая выпечка', name: 'Круассан классик', weight: '90 г',
+        price: 850, badge: null, popular: false, isNew: false, image: 'https://images.unsplash.com/photo-1464305795204-6f5bbfc7fb81?auto=format&fit=crop&w=600&q=75',
+        description: 'Классический французский круассан.', ingredients: 'Мука, масло 84%, молоко.',
+        sizes: [{ label: '1 шт', price: 850 }, { label: '6 шт', price: 4800 }]
+      },
+      {
+        id: 6, category: 'desserts', catLabel: 'Десерты', name: 'Макаронс ассорти', weight: '12 шт',
+        price: 3600, badge: 'Новинка', popular: false, isNew: true, image: 'https://images.unsplash.com/photo-1541427468627-a89a96e5ca1d?auto=format&fit=crop&w=600&q=75',
+        description: '12 макаронс 6 вкусов.', ingredients: 'Миндальная мука, сахар, белки.',
+        sizes: [{ label: '6 шт', price: 1900 }, { label: '12 шт', price: 3600 }]
+      }
+    ],
+    get filteredProducts() {
+      let list = this.products;
+      if (this.activeCategory !== 'all') list = list.filter(p => p.category === this.activeCategory);
+      if (this.searchQuery.trim()) {
+        const q = this.searchQuery.toLowerCase().trim();
+        list = list.filter(p => p.name.toLowerCase().includes(q) || p.catLabel.toLowerCase().includes(q));
+      }
+      const s = this.sortBy;
+      if (s === 'price_asc')  list.sort((a, b) => a.price - b.price);
+      if (s === 'price_desc') list.sort((a, b) => b.price - a.price);
+      if (s === 'popular')    list.sort((a, b) => (b.popular ? 1 : 0) - (a.popular ? 1 : 0));
+      if (s === 'new')        list.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
+      return list;
+    },
+    get cartCount() { return this.cart.reduce((s, i) => s + i.qty, 0); },
+    get cartTotal() { return this.cart.reduce((s, i) => s + i.price * i.qty, 0); },
+    init() {
+      this.$nextTick(() => { lucide.createIcons(); });
+      this.$watch('filteredProducts', () => { this.$nextTick(() => lucide.createIcons()); });
+      this.$watch('modalProduct',     () => { this.$nextTick(() => lucide.createIcons()); });
+      this.$watch('cartOpen',         () => { this.$nextTick(() => lucide.createIcons()); });
+    },
+    openModal(p) {
+      this.modalProduct = p;
+      this.selectedSize = p.sizes?.[0] || null;
+      this.qty = 1;
+      document.body.style.overflow = 'hidden';
+      this.$nextTick(() => lucide.createIcons());
+    },
+    closeModal() {
+      this.modalProduct = null;
+      document.body.style.overflow = '';
+    },
+    addToCart(p) {
+      const existing = this.cart.find(i => i.id === p.id && i.size === p.weight);
+      if (existing) { existing.qty++; }
+      else { this.cart.push({ id: p.id, name: p.name, image: p.image, price: p.price, size: p.weight, qty: 1 }); }
+      this.flashCart();
+    },
+    addToCartFromModal() {
+      const price = this.selectedSize?.price || this.modalProduct?.price || 0;
+      const size  = this.selectedSize?.label || this.modalProduct?.weight;
+      const key = `${this.modalProduct.id}-${size}`;
+      const existing = this.cart.find(i => i._key === key);
+      if (existing) { existing.qty += this.qty; }
+      else {
+        this.cart.push({ _key: key, id: this.modalProduct.id, name: this.modalProduct.name, image: this.modalProduct.image, price, size, qty: this.qty });
+      }
+      this.flashCart();
+      this.closeModal();
+      this.cartOpen = true;
+    },
+    changeQty(index, delta) {
+      this.cart[index].qty += delta;
+      if (this.cart[index].qty <= 0) this.cart.splice(index, 1);
+    },
+    flashCart() {
+      this.cartAnimated = true;
+      setTimeout(() => { this.cartAnimated = false; }, 300);
+      this.$nextTick(() => lucide.createIcons());
+    },
+  };
+}
+</script>
+
+</body>
+</html>

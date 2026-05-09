@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ru" x-data="{ mobileMenu: false, scrolled: false }" x-init="window.addEventListener('scroll', () => { scrolled = window.scrollY > 50 })">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Qulpynai — Кондитерская сеть</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <!-- Google Fonts: Playfair Display + DM Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brandbg: '#FDFBF7', 
+            brandtext: '#382E2C', 
+            brandaccent: '#E32636', 
+            brandmuted: '#F8F4F1', 
+            brandborder: '#EAE0DA',
+          },
+          fontFamily: {
+            display: ['"Playfair Display"', 'serif'],
+            body:    ['"DM Sans"', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; background: #FDFBF7; color: #382E2C; }
+
+    /* ── Grain overlay ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    }
+    body > * { position: relative; z-index: 1; }
+
+    .hero-bg {
+      background: url('https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;
+    }
+
+    /* ── Card hover lift ── */
+    .card-lift {
+      transition: transform .3s ease, box-shadow .3s ease;
+    }
+    .card-lift:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 30px -10px rgba(56, 46, 44, 0.08);
+    }
+
+    .cat-img { transition: transform .6s ease; }
+    .cat-card:hover .cat-img { transform: scale(1.05); }
+
+    /* ── Fade-in animation ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(28px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp .8s ease both; }
+    .delay-1 { animation-delay: .15s; }
+    .delay-2 { animation-delay: .3s; }
+    .delay-3 { animation-delay: .45s; }
+    .delay-4 { animation-delay: .6s; }
+
+    /* ── Nav link underline ── */
+    .nav-link { position: relative; color: #382E2C; }
+    .nav-link::after {
+      content: ''; position: absolute; left: 0; bottom: -2px;
+      width: 0; height: 1px; background: #E32636;
+      transition: width .3s ease;
+    }
+    .nav-link:hover::after { width: 100%; }
+
+    /* ── Price badge ── */
+    .badge-accent {
+      border: 1px solid #E32636;
+      color: #E32636;
+      background: #fff;
+      border-radius: 9999px;
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+    }
+
+    /* ── Scrolled header ── */
+    .header-scrolled {
+      background: rgba(253,251,247,.95) !important;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 1px 10px rgba(56,46,44,.05);
+    }
+
+    /* ── Buttons ── */
+    .btn-elegant {
+      border: 1px solid #E32636;
+      color: #E32636;
+      background: transparent;
+      transition: all .2s ease;
+    }
+    .btn-elegant:hover {
+      background: #E32636;
+      color: #fff;
+    }
+    .btn-solid {
+      background: #E32636;
+      color: #fff;
+      transition: all .2s ease;
+    }
+    .btn-solid:hover {
+      background: #C81D2D;
+    }
+
+    [x-cloak] { display: none !important; }
+  </style>
+</head>
+
+<body>
+
+<!-- ════════════════════════════════════════════════
+     HEADER
+════════════════════════════════════════════════ -->
+<header
+  class="fixed top-0 inset-x-0 z-50 transition-all duration-300 py-3 px-4 md:px-8 border-b border-transparent"
+  :class="scrolled ? 'header-scrolled border-brandborder' : 'bg-transparent'"
+>
+  <div class="max-w-7xl mx-auto flex items-center justify-between">
+
+    <!-- Logo -->
+    <a href="#" class="flex items-center gap-2.5 group">
+      <div class="w-9 h-9 rounded-full border border-brandaccent flex items-center justify-center group-hover:bg-brandmuted transition-colors">
+        <span class="text-sm">🍓</span>
+      </div>
+      <span class="font-display font-semibold text-xl text-brandtext tracking-wide">Qulpynai</span>
+    </a>
+
+    <!-- Desktop Nav -->
+    <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-brandtext">
+      <a href="#categories" class="nav-link hover:text-brandaccent transition-colors">Каталог</a>
+      <a href="#hits"       class="nav-link hover:text-brandaccent transition-colors">Хиты</a>
+      <a href="#about"      class="nav-link hover:text-brandaccent transition-colors">О нас</a>
+      <a href="#branches"   class="nav-link hover:text-brandaccent transition-colors">Филиалы</a>
+      <a href="#contact"    class="nav-link hover:text-brandaccent transition-colors">Контакты</a>
+    </nav>
+
+    <!-- CTA + Burger -->
+    <div class="flex items-center gap-3">
+      <a href="catalog.html" class="hidden md:inline-flex btn-elegant rounded-full px-5 py-2 text-sm font-medium">
+        Заказать
+      </a>
+      <!-- Burger -->
+      <button @click="mobileMenu = !mobileMenu" class="md:hidden w-9 h-9 flex flex-col justify-center gap-1.5 items-center">
+        <span class="w-5 h-px bg-brandtext transition-all" :class="mobileMenu ? 'rotate-45 translate-y-2' : ''"></span>
+        <span class="w-5 h-px bg-brandtext transition-all" :class="mobileMenu ? 'opacity-0' : ''"></span>
+        <span class="w-5 h-px bg-brandtext transition-all" :class="mobileMenu ? '-rotate-45 -translate-y-1.5' : ''"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Menu -->
+  <div x-show="mobileMenu" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
+       class="md:hidden mt-3 bg-brandbg/95 backdrop-blur-md rounded-2xl shadow-lg p-6 border border-brandborder">
+    <nav class="flex flex-col gap-4 text-brandtext font-medium text-sm">
+      <a href="#categories" @click="mobileMenu=false" class="hover:text-brandaccent transition-colors">Каталог</a>
+      <a href="#hits"       @click="mobileMenu=false" class="hover:text-brandaccent transition-colors">Хиты</a>
+      <a href="#about"      @click="mobileMenu=false" class="hover:text-brandaccent transition-colors">О нас</a>
+      <a href="#branches"   @click="mobileMenu=false" class="hover:text-brandaccent transition-colors">Филиалы</a>
+      <a href="#contact"    @click="mobileMenu=false" class="hover:text-brandaccent transition-colors">Контакты</a>
+      <a href="catalog.html" @click="mobileMenu=false" class="btn-elegant rounded-full px-5 py-2.5 text-center mt-2">
+        Перейти в каталог
+      </a>
+    </nav>
+  </div>
+</header>
+
+
+<!-- ════════════════════════════════════════════════
+     HERO
+════════════════════════════════════════════════ -->
+<section class="relative min-h-screen hero-bg flex items-center overflow-hidden">
+
+  <!-- Soft light overlay -->
+  <div class="absolute inset-0 bg-white/70 backdrop-blur-[2px]"></div>
+
+  <div class="relative z-10 max-w-7xl mx-auto px-6 md:px-12 pt-28 pb-20">
+    <div class="max-w-2xl">
+
+      <p class="fade-up text-brandaccent text-xs font-body font-semibold tracking-[0.22em] uppercase mb-4">
+        Кондитерская сеть · Алматы
+      </p>
+
+      <h1 class="fade-up delay-1 font-display text-5xl md:text-7xl font-bold leading-[1.08] text-brandtext mb-6">
+        Сделано&nbsp;с <br/>
+        <em class="not-italic text-brandaccent font-normal">любовью</em><br/>
+        и клубникой
+      </h1>
+
+      <p class="fade-up delay-2 font-body text-brandtext/80 text-lg md:text-xl leading-relaxed mb-10 max-w-lg">
+        Авторские торты, нежная выпечка и изысканные десерты — каждый день свежие, каждый раз с душой.
+      </p>
+
+      <div class="fade-up delay-3 flex flex-col sm:flex-row gap-4">
+        <a href="catalog.html" class="btn-solid rounded-full px-8 py-3.5 text-sm font-medium font-body text-center">
+          Смотреть каталог
+        </a>
+        <a href="#about" class="btn-elegant rounded-full px-8 py-3.5 text-sm font-medium font-body text-center bg-white/50">
+          Узнать о нас
+        </a>
+      </div>
+
+      <!-- Stats row -->
+      <div class="fade-up delay-4 flex gap-8 mt-14">
+        <div>
+          <p class="font-display text-3xl font-bold text-brandtext">12+</p>
+          <p class="font-body text-brandtext/60 text-xs mt-1">лет на рынке</p>
+        </div>
+        <div class="w-px bg-brandborder"></div>
+        <div>
+          <p class="font-display text-3xl font-bold text-brandtext">7</p>
+          <p class="font-body text-brandtext/60 text-xs mt-1">филиалов</p>
+        </div>
+        <div class="w-px bg-brandborder"></div>
+        <div>
+          <p class="font-display text-3xl font-bold text-brandtext">500+</p>
+          <p class="font-body text-brandtext/60 text-xs mt-1">десертов</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════
+     CATEGORIES GRID
+════════════════════════════════════════════════ -->
+<section id="categories" class="py-24 px-6 md:px-12 bg-brandbg">
+  <div class="max-w-7xl mx-auto">
+
+    <div class="text-center mb-14">
+      <p class="text-brandaccent text-xs font-body font-semibold tracking-[0.18em] uppercase mb-3">Наш ассортимент</p>
+      <h2 class="font-display text-4xl md:text-5xl font-bold text-brandtext mb-6">Категории</h2>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+      <!-- Торты -->
+      <a href="catalog.html" class="cat-card group relative rounded-2xl overflow-hidden h-72 block border border-brandborder card-lift cursor-pointer">
+        <img src="https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?auto=format&fit=crop&w=800&q=80"
+             alt="Торты" class="cat-img absolute inset-0 w-full h-full object-cover"/>
+        <div class="absolute inset-0 bg-gradient-to-t from-brandtext/90 via-brandtext/20 to-transparent"></div>
+        <div class="absolute bottom-0 left-0 p-6">
+          <h3 class="font-display text-2xl font-bold text-white mb-1">Торты</h3>
+          <p class="font-body text-white/80 text-sm">Авторские и классические</p>
+        </div>
+      </a>
+
+      <!-- Выпечка -->
+      <a href="catalog.html" class="cat-card group relative rounded-2xl overflow-hidden h-72 block border border-brandborder card-lift cursor-pointer">
+        <img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80"
+             alt="Выпечка" class="cat-img absolute inset-0 w-full h-full object-cover"/>
+        <div class="absolute inset-0 bg-gradient-to-t from-brandtext/90 via-brandtext/20 to-transparent"></div>
+        <div class="absolute bottom-0 left-0 p-6">
+          <h3 class="font-display text-2xl font-bold text-white mb-1">Выпечка</h3>
+          <p class="font-body text-white/80 text-sm">Свежая каждое утро</p>
+        </div>
+      </a>
+
+      <!-- Десерты -->
+      <a href="catalog.html" class="cat-card group relative rounded-2xl overflow-hidden h-72 block border border-brandborder card-lift cursor-pointer">
+        <img src="https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=800&q=80"
+             alt="Десерты" class="cat-img absolute inset-0 w-full h-full object-cover"/>
+        <div class="absolute inset-0 bg-gradient-to-t from-brandtext/90 via-brandtext/20 to-transparent"></div>
+        <div class="absolute bottom-0 left-0 p-6">
+          <h3 class="font-display text-2xl font-bold text-white mb-1">Десерты</h3>
+          <p class="font-body text-white/80 text-sm">Пирожные, муссы, эклеры</p>
+        </div>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════
+     НАШИ ХИТЫ
+════════════════════════════════════════════════ -->
+<section id="hits" class="py-24 px-6 md:px-12 bg-brandmuted border-y border-brandborder">
+  <div class="max-w-7xl mx-auto">
+
+    <div class="text-center mb-14">
+      <p class="text-brandaccent text-xs font-body font-semibold tracking-[0.18em] uppercase mb-3">Самое популярное</p>
+      <h2 class="font-display text-4xl md:text-5xl font-bold text-brandtext mb-6">Наши хиты</h2>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+      <!-- Card 1 -->
+      <div class="card-lift bg-white rounded-2xl overflow-hidden border border-brandborder group">
+        <div class="relative h-48 overflow-hidden border-b border-brandborder">
+          <img src="https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&fit=crop&w=600&q=80"
+               alt="Клубничный торт" class="cat-img w-full h-full object-cover"/>
+          <div class="absolute top-3 right-3">
+            <span class="badge-accent text-[10px] uppercase tracking-wider px-2.5 py-1">Хит</span>
+          </div>
+        </div>
+        <div class="p-5">
+          <h3 class="font-display font-semibold text-brandtext text-lg mb-1">Клубничный мусс</h3>
+          <p class="font-body text-brandtext/60 text-xs mb-4 leading-relaxed">Нежный бисквит со свежей клубникой и сливочным кремом.</p>
+          <div class="flex items-center justify-between mt-auto">
+            <span class="font-body text-brandtext font-semibold text-sm">6 900 ₸</span>
+            <a href="catalog.html" class="w-8 h-8 rounded-full border border-brandborder text-brandtext flex items-center justify-center hover:border-brandaccent hover:text-brandaccent transition-colors">
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="card-lift bg-white rounded-2xl overflow-hidden border border-brandborder group">
+        <div class="relative h-48 overflow-hidden border-b border-brandborder">
+          <img src="https://images.unsplash.com/photo-1541427468627-a89a96e5ca1d?auto=format&fit=crop&w=600&q=80"
+               alt="Макаронс" class="cat-img w-full h-full object-cover"/>
+        </div>
+        <div class="p-5">
+          <h3 class="font-display font-semibold text-brandtext text-lg mb-1">Макаронс ассорти</h3>
+          <p class="font-body text-brandtext/60 text-xs mb-4 leading-relaxed">6 видов — малина, фисташка, шоколад, лаванда, ваниль, лимон.</p>
+          <div class="flex items-center justify-between mt-auto">
+            <span class="font-body text-brandtext font-semibold text-sm">3 200 ₸</span>
+            <a href="catalog.html" class="w-8 h-8 rounded-full border border-brandborder text-brandtext flex items-center justify-center hover:border-brandaccent hover:text-brandaccent transition-colors">
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="card-lift bg-white rounded-2xl overflow-hidden border border-brandborder group">
+        <div class="relative h-48 overflow-hidden border-b border-brandborder">
+          <img src="https://images.unsplash.com/photo-1486427944299-d1955d23e34d?auto=format&fit=crop&w=600&q=80"
+               alt="Наполеон" class="cat-img w-full h-full object-cover"/>
+        </div>
+        <div class="p-5">
+          <h3 class="font-display font-semibold text-brandtext text-lg mb-1">Наполеон классик</h3>
+          <p class="font-body text-brandtext/60 text-xs mb-4 leading-relaxed">Хрустящие слои с заварным кремом по семейному рецепту.</p>
+          <div class="flex items-center justify-between mt-auto">
+            <span class="font-body text-brandtext font-semibold text-sm">7 500 ₸</span>
+            <a href="catalog.html" class="w-8 h-8 rounded-full border border-brandborder text-brandtext flex items-center justify-center hover:border-brandaccent hover:text-brandaccent transition-colors">
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="card-lift bg-white rounded-2xl overflow-hidden border border-brandborder group">
+        <div class="relative h-48 overflow-hidden border-b border-brandborder">
+          <img src="https://images.unsplash.com/photo-1464305795204-6f5bbfc7fb81?auto=format&fit=crop&w=600&q=80"
+               alt="Круассан" class="cat-img w-full h-full object-cover"/>
+        </div>
+        <div class="p-5">
+          <h3 class="font-display font-semibold text-brandtext text-lg mb-1">Круассан с малиной</h3>
+          <p class="font-body text-brandtext/60 text-xs mb-4 leading-relaxed">Воздушное слоёное тесто с джемом и взбитыми сливками.</p>
+          <div class="flex items-center justify-between mt-auto">
+            <span class="font-body text-brandtext font-semibold text-sm">850 ₸</span>
+            <a href="catalog.html" class="w-8 h-8 rounded-full border border-brandborder text-brandtext flex items-center justify-center hover:border-brandaccent hover:text-brandaccent transition-colors">
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="text-center mt-12">
+      <a href="catalog.html" class="btn-elegant rounded-full px-8 py-3 font-body font-medium text-sm inline-block bg-white">
+        Перейти в каталог
+      </a>
+    </div>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════
+     О НАС
+════════════════════════════════════════════════ -->
+<section id="about" class="py-24 px-6 md:px-12 bg-brandbg overflow-hidden">
+  <div class="max-w-7xl mx-auto">
+    <div class="grid md:grid-cols-2 gap-14 items-center">
+
+      <!-- Images collage -->
+      <div class="relative h-96 md:h-[520px]">
+        <div class="absolute top-0 left-0 w-3/5 h-4/5 rounded-2xl overflow-hidden border border-brandborder shadow-sm">
+          <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=700&q=80"
+               alt="Кондитер" class="w-full h-full object-cover"/>
+        </div>
+        <div class="absolute bottom-0 right-0 w-2/5 h-3/5 rounded-2xl overflow-hidden border-4 border-brandbg shadow-sm">
+          <img src="https://images.unsplash.com/photo-1626803775151-61d756612f97?auto=format&fit=crop&w=500&q=80"
+               alt="Ингредиенты" class="w-full h-full object-cover"/>
+        </div>
+      </div>
+
+      <!-- Text -->
+      <div>
+        <p class="text-brandaccent text-xs font-body font-semibold tracking-[0.18em] uppercase mb-4">История бренда</p>
+        <h2 class="font-display text-4xl md:text-5xl font-bold text-brandtext leading-tight mb-6">
+          Семейные рецепты,<br/>проверенные временем
+        </h2>
+        <div class="space-y-4 font-body text-brandtext/70 leading-relaxed text-sm">
+          <p>
+            Qulpynai — это не просто кондитерская. Это место, где каждый торт рождается из любви к своему делу. Мы начали с маленькой семейной пекарни в 2012 году и выросли в любимую сеть Алматы.
+          </p>
+          <p>
+            Мы используем только натуральные ингредиенты: свежую клубнику и ягоды от казахстанских фермеров, сливочное масло первого отжима, бельгийский шоколад и ванильные стручки из Мадагаскара. Никаких консервантов — только вкус.
+          </p>
+        </div>
+
+        <!-- Values -->
+        <div class="grid grid-cols-2 gap-6 mt-10">
+          <div>
+            <p class="font-body font-semibold text-brandtext text-sm border-b border-brandaccent/30 pb-2 mb-2 inline-block">100% натурально</p>
+            <p class="font-body text-brandtext/60 text-xs">Без ГМО и консервантов</p>
+          </div>
+          <div>
+            <p class="font-body font-semibold text-brandtext text-sm border-b border-brandaccent/30 pb-2 mb-2 inline-block">Свежие ежедневно</p>
+            <p class="font-body text-brandtext/60 text-xs">Выпекаем каждое утро</p>
+          </div>
+          <div>
+            <p class="font-body font-semibold text-brandtext text-sm border-b border-brandaccent/30 pb-2 mb-2 inline-block">Авторские рецепты</p>
+            <p class="font-body text-brandtext/60 text-xs">Уникальные разработки</p>
+          </div>
+          <div>
+            <p class="font-body font-semibold text-brandtext text-sm border-b border-brandaccent/30 pb-2 mb-2 inline-block">Доставка по городу</p>
+            <p class="font-body text-brandtext/60 text-xs">За 2–3 часа до двери</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════
+     BANNER / CTA
+════════════════════════════════════════════════ -->
+<section class="py-20 px-6 md:px-12 bg-brandmuted border-y border-brandborder">
+  <div class="max-w-4xl mx-auto text-center">
+    <p class="text-brandaccent text-xs font-body font-semibold tracking-[0.2em] uppercase mb-4">Индивидуальный заказ</p>
+    <h2 class="font-display text-4xl md:text-4xl font-bold text-brandtext leading-tight mb-4">
+      Создадим торт вашей мечты
+    </h2>
+    <p class="font-body text-brandtext/70 text-sm mb-8 max-w-lg mx-auto">
+      Укажите дату, количество гостей и вкусовые предпочтения — мы воплотим идею в жизнь.
+    </p>
+    <a href="#contact" class="btn-elegant bg-white rounded-full px-8 py-3.5 font-body font-medium text-sm inline-flex items-center gap-2">
+      <i class="fa-regular fa-envelope"></i> Оставить заявку
+    </a>
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════
+     ФИЛИАЛЫ
+════════════════════════════════════════════════ -->
+<section id="branches" class="py-24 px-6 md:px-12 bg-brandbg">
+  <div class="max-w-7xl mx-auto">
+
+    <div class="text-center mb-14">
+      <p class="text-brandaccent text-xs font-body font-semibold tracking-[0.18em] uppercase mb-3">Мы рядом</p>
+      <h2 class="font-display text-4xl md:text-5xl font-bold text-brandtext mb-6">Наши филиалы</h2>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <!-- Branch cards -->
+      <div class="bg-white border border-brandborder rounded-2xl p-6 shadow-sm hover:border-brandtext/30 transition-colors">
+        <h3 class="font-display font-semibold text-brandtext text-lg mb-1">Медеу</h3>
+        <p class="font-body text-brandtext/70 text-sm mb-3">ул. Достык, 111, ТРЦ Esentai Mall</p>
+        <p class="text-xs text-brandaccent font-medium">Пн–Вс · 09:00–22:00</p>
+      </div>
+
+      <div class="bg-white border border-brandborder rounded-2xl p-6 shadow-sm hover:border-brandtext/30 transition-colors">
+        <h3 class="font-display font-semibold text-brandtext text-lg mb-1">Бостандык</h3>
+        <p class="font-body text-brandtext/70 text-sm mb-3">пр. Абая, 52, ТД «Керемет»</p>
+        <p class="text-xs text-brandaccent font-medium">Пн–Вс · 08:00–21:00</p>
+      </div>
+
+      <div class="bg-white border border-brandborder rounded-2xl p-6 shadow-sm hover:border-brandtext/30 transition-colors">
+        <h3 class="font-display font-semibold text-brandtext text-lg mb-1">Алмалы</h3>
+        <p class="font-body text-brandtext/70 text-sm mb-3">ул. Байзакова, 280/1, ТЦ «Арбат»</p>
+        <p class="text-xs text-brandaccent font-medium">Пн–Вс · 09:00–21:00</p>
+      </div>
+      
+      <div class="bg-white border border-brandborder rounded-2xl p-6 shadow-sm hover:border-brandtext/30 transition-colors">
+        <h3 class="font-display font-semibold text-brandtext text-lg mb-1">Ауэзов</h3>
+        <p class="font-body text-brandtext/70 text-sm mb-3">мкр. Аксай-4, ул. Саина, 14</p>
+        <p class="text-xs text-brandaccent font-medium">Пн–Вс · 09:00–21:00</p>
+      </div>
+
+      <div class="bg-white border border-brandborder rounded-2xl p-6 shadow-sm hover:border-brandtext/30 transition-colors">
+        <h3 class="font-display font-semibold text-brandtext text-lg mb-1">Наурызбай</h3>
+        <p class="font-body text-brandtext/70 text-sm mb-3">ул. Жандосова, 94, 1 этаж</p>
+        <p class="text-xs text-brandaccent font-medium">Пн–Вс · 08:00–20:00</p>
+      </div>
+
+      <div class="bg-white border border-brandborder rounded-2xl p-6 shadow-sm hover:border-brandtext/30 transition-colors">
+        <h3 class="font-display font-semibold text-brandtext text-lg mb-1">Центр (Flagship)</h3>
+        <p class="font-body text-brandtext/70 text-sm mb-3">пр. Сейткали Байзакова, 209</p>
+        <p class="text-xs text-brandaccent font-medium">Пн–Вс · 08:00–23:00</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════
+     КОНТАКТЫ / ФОРМА
+════════════════════════════════════════════════ -->
+<section id="contact" class="py-24 px-6 md:px-12 bg-brandmuted border-t border-brandborder">
+  <div class="max-w-3xl mx-auto">
+
+    <div class="text-center mb-12">
+      <p class="text-brandaccent text-xs font-body font-semibold tracking-[0.18em] uppercase mb-3">Напишите нам</p>
+      <h2 class="font-display text-4xl md:text-5xl font-bold text-brandtext mb-6">Оставить заявку</h2>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-brandborder shadow-sm p-8 md:p-10" x-data="{ sent: false }">
+      <div x-show="!sent">
+        <div class="grid md:grid-cols-2 gap-5">
+          <div>
+            <label class="font-body text-xs text-brandtext/60 uppercase tracking-widest font-semibold block mb-2">Ваше имя</label>
+            <input type="text" placeholder="Айгерим" class="w-full border border-brandborder rounded-xl px-4 py-3 font-body text-brandtext text-sm focus:outline-none focus:border-brandtext transition-colors bg-brandbg/50"/>
+          </div>
+          <div>
+            <label class="font-body text-xs text-brandtext/60 uppercase tracking-widest font-semibold block mb-2">Телефон</label>
+            <input type="tel" placeholder="+7 (777) 000-00-00" class="w-full border border-brandborder rounded-xl px-4 py-3 font-body text-brandtext text-sm focus:outline-none focus:border-brandtext transition-colors bg-brandbg/50"/>
+          </div>
+          <div class="md:col-span-2">
+            <label class="font-body text-xs text-brandtext/60 uppercase tracking-widest font-semibold block mb-2">Тип заказа</label>
+            <select class="w-full border border-brandborder rounded-xl px-4 py-3 font-body text-brandtext text-sm focus:outline-none focus:border-brandtext transition-colors bg-brandbg/50">
+              <option>Торт на заказ</option>
+              <option>Корпоративный заказ</option>
+              <option>Свадебный торт</option>
+              <option>Ассорти десертов</option>
+            </select>
+          </div>
+          <div class="md:col-span-2">
+            <label class="font-body text-xs text-brandtext/60 uppercase tracking-widest font-semibold block mb-2">Пожелания</label>
+            <textarea rows="3" placeholder="Расскажите о вашей идее..." class="w-full border border-brandborder rounded-xl px-4 py-3 font-body text-brandtext text-sm focus:outline-none focus:border-brandtext transition-colors bg-brandbg/50 resize-none"></textarea>
+          </div>
+        </div>
+        <div class="mt-8 flex justify-center">
+          <button @click="sent = true" class="btn-solid rounded-full px-10 py-3.5 font-body font-medium text-sm">
+            Отправить
+          </button>
+        </div>
+      </div>
+      <!-- Success -->
+      <div x-show="sent" x-cloak class="text-center py-8">
+        <h3 class="font-display text-2xl font-bold text-brandtext mb-2">Заявка отправлена!</h3>
+        <p class="font-body text-brandtext/70 text-sm">Мы свяжемся с вами в течение 30 минут. Спасибо за выбор Qulpynai!</p>
+        <button @click="sent = false" class="mt-6 btn-elegant rounded-full px-6 py-2 text-sm font-medium">Отправить ещё</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ════════════════════════════════════════════════
+     FOOTER
+════════════════════════════════════════════════ -->
+<footer class="bg-brandmuted text-brandtext pt-16 pb-8 px-6 md:px-12 border-t border-brandborder">
+  <div class="max-w-7xl mx-auto">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-brandborder">
+
+      <!-- Brand -->
+      <div class="md:col-span-1">
+        <div class="flex items-center gap-2.5 mb-4">
+          <div class="w-8 h-8 border border-brandaccent rounded-full flex items-center justify-center">
+            <span class="text-sm">🍓</span>
+          </div>
+          <span class="font-display font-semibold text-xl text-brandtext">Qulpynai</span>
+        </div>
+        <p class="font-body text-xs leading-relaxed text-brandtext/60 mb-5">
+          Сеть кондитерских в Алматы. Натуральные ингредиенты, семейные рецепты, любовь в каждом изделии.
+        </p>
+      </div>
+
+      <!-- Nav -->
+      <div>
+        <h4 class="font-body font-semibold text-brandtext text-xs uppercase tracking-widest mb-4">Разделы</h4>
+        <ul class="space-y-2.5 font-body text-xs text-brandtext/70">
+          <li><a href="#categories" class="hover:text-brandaccent transition-colors">Каталог</a></li>
+          <li><a href="#hits"       class="hover:text-brandaccent transition-colors">Хиты продаж</a></li>
+          <li><a href="#about"      class="hover:text-brandaccent transition-colors">О нас</a></li>
+          <li><a href="#branches"   class="hover:text-brandaccent transition-colors">Филиалы</a></li>
+          <li><a href="catalog.html"    class="hover:text-brandaccent transition-colors">Заказать</a></li>
+        </ul>
+      </div>
+
+      <!-- Contacts -->
+      <div>
+        <h4 class="font-body font-semibold text-brandtext text-xs uppercase tracking-widest mb-4">Контакты</h4>
+        <ul class="space-y-3 font-body text-xs text-brandtext/70">
+          <li>
+            <a href="tel:+77770351204" class="hover:text-brandaccent transition-colors">+7 (777) 035-12-04</a>
+          </li>
+          <li>
+            <a href="mailto:hello@qulpynai.kz" class="hover:text-brandaccent transition-colors">hello@qulpynai.kz</a>
+          </li>
+          <li>
+            <span>Алматы, пр. Байзакова 209</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Hours -->
+      <div>
+        <h4 class="font-body font-semibold text-brandtext text-xs uppercase tracking-widest mb-4">Режим работы</h4>
+        <ul class="space-y-2 font-body text-xs text-brandtext/70">
+          <li class="flex justify-between"><span>Пн — Пт</span><span class="text-brandtext">08:00—22:00</span></li>
+          <li class="flex justify-between"><span>Сб — Вс</span><span class="text-brandtext">09:00—22:00</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-[11px] font-body text-brandtext/50">
+      <p>© 2024 Qulpynai. Все права защищены.</p>
+      <div class="flex gap-5">
+        <a href="#" class="hover:text-brandtext transition-colors">Политика конфиденциальности</a>
+        <a href="#" class="hover:text-brandtext transition-colors">Пользовательское соглашение</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
